@@ -2,7 +2,8 @@
 const db = require('../config/db');
 
 const createArchive = async (req, res) => {
-  const { title, content, date, jurisdiction, location, user_id } = req.body;
+  const { title, content, date, jurisdiction, location } = req.body;
+  const user_id = req.user.id;
   const file = req.file;
 
   if (!title || !user_id || !file) {

@@ -33,6 +33,13 @@ app.use('/api/archives', archivesRoutes);
 const authRoutes = require('./routes/auth');
 app.use('/api', authRoutes);
 
+const notesRoutes = require('./routes/notes');
+app.use('/api/notes', notesRoutes);
+
+const profileRoutes = require('./routes/profile');
+app.use('/api/profile', profileRoutes);
+
+
 const testRoutes = require('./routes/test');
 app.use('/api', testRoutes);
 
