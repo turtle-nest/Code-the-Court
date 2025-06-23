@@ -1,0 +1,79 @@
+// tests/protectedRoutes.test.js
+const request = require('supertest');
+const app = require('../server');
+const db = require('../config/db');
+const bcrypt = require('bcrypt');
+
+let token;
+
+beforeAll(async () => {
+  // Supprimer les archives liées à ce user (au cas où)
+  await db.query(
+    'DELETE FROM archives WHERE user_id = (SELECT id FROM users WHERE email = $1)',
+    ['test@example.com']
+  );
+  await db.query('DELETE FROM users WHERE email = $1', ['test@example.com']);
+
+  // Créer un utilisateur test
+  const password = await bcrypt.hash('TestPass123', 10);
+  await db.query(
+    'INSERT INTO users (email, password_hash, role, status) VALUES ($1, $2, $3, $4)',
+    ['test@example.com', password, 'guest', 'approved']
+  );
+
+  // Login pour obtenir le token
+  const res = await request(app)
+    .post('/api/login')
+    .send({ email: 'test@example.com', password: 'TestPass123' });
+  token = res.body.token;
+});
+
+afterAll(async () => {
+  // Supprimer les archives liées à ce user
+  await db.query(
+    'DELETE FROM archives WHERE user_id = (SELECT id FROM users WHERE email = $1)',
+    ['test@example.com']
+  );
+  await db.query('DELETE FROM users WHERE email = $1', ['test@example.com']);
+  await db.end();
+});
+
+describe('Protected routes', () => {
+  test('GET /api/profile should return 401 if no token', async () => {
+    const res = await request(app).get('/api/profile');
+    expect(res.statusCode).toBe(401);
+  });
+
+  test('GET /api/profile should return user profile with valid token', async () => {
+    const res = await request(app)
+      .get('/api/profile')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.profile).toBeDefined();
+    expect(res.body.profile.email).toBe('test@example.com');
+  });
+
+  test('POST /api/notes should return 401 if no token', async () => {
+    const res = await request(app)
+      .post('/api/notes')
+      .send({ target_id: 'some-id', target_type: 'decision', content: 'test note' });
+    expect(res.statusCode).toBe(401);
+  });
+
+  test('POST /api/notes should work with valid token', async () => {
+    const res = await request(app)
+      .post('/api/notes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ target_id: 'some-id', target_type: 'decision', content: 'test note' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.note).toBeDefined();
+    expect(res.body.note.content).toBe('test note');
+  });
+
+  test('POST /api/archives should return 401 if no token', async () => {
+    const res = await request(app)
+      .post('/api/archives')
+      .send({ title: 'archive', content: 'test', date: '2024-01-01' });
+    expect(res.statusCode).toBe(401);
+  });
+});
