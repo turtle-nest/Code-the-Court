@@ -7,7 +7,7 @@
     "test": "jest",
     "db:init": "psql -U postgres -d code_the_court -f migrations/001_init_db.sql",
     "db:create": "createdb -U postgres code_the_court",
-    "db:seed": "psql -U postgres -d code_the_court -f migrations/002_seed_db.sql",
+    "db:seed": "psql -U postgres -d code_the_court -f migrations/002_seed_data.sql",
     "db:reset": "./scripts/reset_db.sh && npm run db:seed"
   },
   "repository": {

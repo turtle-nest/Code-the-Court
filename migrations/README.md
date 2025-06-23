@@ -14,11 +14,13 @@ This folder contains SQL scripts used to initialize and populate the PostgreSQL 
   npm run db:init
   ```
 
-### `002_seed_db.sql`
-- Seeds the database with initial test data.
-- Inserts:
-  - A test user (`test@example.com`) with hashed password.
-  - Example decisions (sample title and jurisdiction).
+### `002_seed_data.sql`
+- Inserts realistic test data:
+  - Two users (admin and guest)
+  - One legal decision
+  - Tags and relations
+  - One archive and one note
+- Helps populate the database for development and testing purposes
 - **Run with:**  
   ```bash
   npm run db:seed
@@ -36,7 +38,7 @@ This will:
 1. Drop the existing database (if any),
 2. Recreate it,
 3. Run `001_init_db.sql`,
-4. Run `002_seed_db.sql`.
+4. Run `002_seed_data.sql`.
 
 ---
 

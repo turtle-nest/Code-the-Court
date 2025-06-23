@@ -20,5 +20,6 @@ fi
 echo "📥 Running schema file '$SQL_FILE'..."
 # Execute the schema SQL file to initialize tables and structure
 psql -U "$DB_USER" -d "$DB_NAME" -f "$SQL_FILE"
+psql -U "$DB_USER" -d "$DB_NAME" -f "migrations/002_seed_data.sql"
 
 echo "✅ Database '$DB_NAME' has been initialized successfully."
