@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const db = require('./config/db');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 dotenv.config();
@@ -39,9 +40,11 @@ app.use('/api/notes', notesRoutes);
 const profileRoutes = require('./routes/profile');
 app.use('/api/profile', profileRoutes);
 
-
 const testRoutes = require('./routes/test');
 app.use('/api', testRoutes);
+
+// Error handler middleware (should be last)
+app.use(errorHandler);
 
 // Start server only if executed directly
 if (require.main === module) {

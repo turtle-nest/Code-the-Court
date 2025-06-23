@@ -5,6 +5,11 @@ const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/upload');
 const { createArchive } = require('../controllers/archivesController');
 
-router.post('/', authMiddleware, upload.single('pdf'), createArchive);
+router.post(
+  '/',
+  authMiddleware,
+  upload.single('pdf'),
+  createArchive
+);
 
 module.exports = router;

@@ -1,13 +1,14 @@
 // controllers/archivesController.js
 const db = require('../config/db');
+const ApiError = require('../utils/apiError');
 
-const createArchive = async (req, res) => {
+const createArchive = async (req, res, next) => {
   const { title, content, date, jurisdiction, location } = req.body;
-  const user_id = req.user.id;
+  const user_id = req.user?.id;
   const file = req.file;
 
   if (!title || !user_id || !file) {
-    return res.status(400).json({ error: 'title, user_id, and file are required' });
+    return next(new ApiError('title, user_id, and file are required', 400));
   }
 
   try {
@@ -21,7 +22,7 @@ const createArchive = async (req, res) => {
     res.status(201).json({ archive_id: result.rows[0].id });
   } catch (error) {
     console.error('❌ Error creating archive:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(new ApiError('Internal server error', 500));
   }
 };
 
