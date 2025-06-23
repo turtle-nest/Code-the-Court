@@ -1,0 +1,29 @@
+{
+  "name": "code-the-court",
+  "version": "1.0.0",
+  "description": "Portfolio project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/turtle-nest/Code-the-Court.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/turtle-nest/Code-the-Court/issues"
+  },
+  "homepage": "https://github.com/turtle-nest/Code-the-Court#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.1",
+    "pg": "^8.16.2"
+  }
+}
