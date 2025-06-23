@@ -15,8 +15,8 @@ app.use(express.json()); // allows reading JSON in POST/PUT requests
 
 // Test DB query
 db.query('SELECT NOW()')
-.then(res => console.log('📅 DB Time:', res.rows[0].now))
-.catch(err => console.error('❌ DB Error:', err));
+  .then(res => console.log('📅 DB Time:', res.rows[0].now))
+  .catch(err => console.error('❌ DB Error:', err));
 
 // Test route
 app.get('/', (req, res) => {
@@ -30,7 +30,17 @@ app.use('/api/decisions', decisionsRoutes);
 const archivesRoutes = require('./routes/archives');
 app.use('/api/archives', archivesRoutes);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+const authRoutes = require('./routes/auth');
+app.use('/api', authRoutes);
+
+const testRoutes = require('./routes/test');
+app.use('/api', testRoutes);
+
+// Start server only if executed directly
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
