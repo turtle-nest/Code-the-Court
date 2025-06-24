@@ -43,6 +43,12 @@ app.use('/api/notes', notesRoutes);
 const profileRoutes = require('./routes/profile');
 app.use('/api/profile', profileRoutes);
 
+const juridictionsRoutes = require('./routes/juridictions');
+app.use('/api/juridictions', juridictionsRoutes);
+
+const typesRoutes = require('./routes/types');
+app.use('/api/types', typesRoutes);
+
 const testRoutes = require('./routes/test');
 app.use('/api', testRoutes);
 

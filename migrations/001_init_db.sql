@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS decisions (
   content TEXT,
   date DATE,
   jurisdiction VARCHAR,
+  case_type VARCHAR,
   source VARCHAR NOT NULL DEFAULT 'api',
   public BOOLEAN DEFAULT TRUE
 );

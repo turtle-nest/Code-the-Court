@@ -5,7 +5,7 @@
 
 DB_NAME="code_the_court"
 SQL_FILE="migrations/001_init_db.sql"
-DB_USER="postgres"
+DB_USER="nicolas"
 
 echo "🔄 Checking if database '$DB_NAME' exists..."
 
