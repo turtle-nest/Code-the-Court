@@ -1,0 +1,18 @@
+[
+  {
+    "id": "mock-001",
+    "dateDecision": "2024-01-15",
+    "juridiction": "Cour d'appel",
+    "typeAffaire": "Civil",
+    "titre": "Affaire Dupont c/ Martin",
+    "contenu": "Texte de la décision simulée..."
+  },
+  {
+    "id": "mock-002",
+    "dateDecision": "2024-03-22",
+    "juridiction": "Cour de cassation",
+    "typeAffaire": "Pénal",
+    "titre": "Affaire République c/ Durant",
+    "contenu": "Extrait du jugement fictif..."
+  }
+]
