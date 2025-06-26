@@ -1,7 +1,7 @@
 // controllers/decisionsController.js
 const db = require('../config/db');
 const ApiError = require('../utils/apiError');
-const fetch = require('node-fetch');
+const { fetchDecisionsFromJudilibre } = require('../services/judilibreService');
 
 // GET /api/decisions
 const getAllDecisions = async (req, res, next) => {
@@ -42,22 +42,15 @@ const getAllDecisions = async (req, res, next) => {
 const importDecisionsFromJudilibre = async (req, res, next) => {
   try {
     const { date, juridiction, type_affaire } = req.query;
-    let apiUrl = 'https://www.judilibre.io/api/v1/decisions?';
 
-    if (date) apiUrl += `date_start=${date}&`;
-    if (juridiction) apiUrl += `jurisdiction=${juridiction}&`;
-    if (type_affaire) apiUrl += `type_affaire=${type_affaire}&`;
-    apiUrl += 'page_size=20';
-
-    const response = await fetch(apiUrl);
-    if (!response.ok) {
-      throw new ApiError('Failed to fetch Judilibre', response.status);
-    }
-    const data = await response.json();
+    const data = await fetchDecisionsFromJudilibre({ date, juridiction, type_affaire });
 
     res.status(200).json(data);
   } catch (error) {
-    console.error('❌ Error importing decisions from Judilibre:', error);
+    console.error('❌ Error importing decisions from Judilibre:');
+    console.error('📛 Message:', error.message);
+    console.error('📦 Response data:', error.response?.data);
+    console.error('📦 Response status:', error.response?.status);
     next(new ApiError('Failed to import from Judilibre', 500));
   }
 };

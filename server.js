@@ -1,13 +1,12 @@
 // server.js (Backend root file, the entry point)
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const db = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
-dotenv.config();
-
 const PORT = process.env.PORT || 3000;
 
 // Middleware
