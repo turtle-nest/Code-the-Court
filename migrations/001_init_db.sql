@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  role VARCHAR NOT NULL DEFAULT 'guest',
-  status VARCHAR NOT NULL DEFAULT 'pending',
+  role VARCHAR NOT NULL DEFAULT 'guest',           -- ENUM-like behavior: 'guest', 'user', 'admin'
+  status VARCHAR NOT NULL DEFAULT 'pending',       -- 'pending', 'approved'
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -70,17 +70,6 @@ CREATE TABLE IF NOT EXISTS decision_tags (
   PRIMARY KEY (decision_id, tag_id),
   FOREIGN KEY (decision_id) REFERENCES decisions(id),
   FOREIGN KEY (tag_id) REFERENCES tags(id)
-);
-
--- REGISTRATION REQUESTS
-CREATE TABLE IF NOT EXISTS registration_requests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  motivation TEXT,
-  affiliation VARCHAR,
-  status VARCHAR NOT NULL DEFAULT 'pending',
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- ADD FILE_PATH IN ARCHIVES TABLE

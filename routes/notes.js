@@ -1,7 +1,7 @@
 // routes/notes.js
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
+const authMiddleware = require('../middlewares/authMiddleware');
 
 router.post('/', authMiddleware, (req, res) => {
   const user_id = req.user.id;

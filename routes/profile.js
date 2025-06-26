@@ -1,7 +1,7 @@
 // routes/profile.js
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
+const authMiddleware = require('../middlewares/authMiddleware');
 
 router.get('/', authMiddleware, (req, res) => {
   // req.user is defined by the middleware, from the decoded JWT

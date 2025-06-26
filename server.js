@@ -4,7 +4,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const db = require('./config/db');
-const errorHandler = require('./middleware/errorHandler');
+const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,6 +35,9 @@ app.use('/api/archives', archivesRoutes);
 
 const authRoutes = require('./routes/auth');
 app.use('/api', authRoutes);
+
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
 
 const notesRoutes = require('./routes/notes');
 app.use('/api/notes', notesRoutes);

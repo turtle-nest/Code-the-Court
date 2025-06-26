@@ -1,8 +1,8 @@
 // routes/archives.js
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
-const upload = require('../middleware/upload');
+const authMiddleware = require('../middlewares/authMiddleware');
+const upload = require('../middlewares/upload');
 const { createArchive, getAllArchives } = require('../controllers/archivesController');
 
 router.get('/', getAllArchives);
