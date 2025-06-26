@@ -1,46 +1,38 @@
-# Database Migrations
+# Postman Collection – Code the Court
 
-This folder contains SQL scripts used to initialize and populate the PostgreSQL database for the Code the Court project.
+This folder contains Postman files to test the backend API of the **Code the Court** project.
 
-## 🗂 Files
+## Files
 
-### `001_init_db.sql`
-- Initializes the full database schema.
-- Creates tables: `users`, `decisions`, `archives`, `notes`, `tags`, `decision_tags`, and `registration_requests`.
-- Adds required indexes and foreign key constraints.
-- Includes extension for UUID generation (`pgcrypto`).
-- **Run with:**  
-  ```bash
-  npm run db:init
-  ```
+- `Code-the-Court.postman_collection.json`: Postman collection including login, protected routes, and test data creation.
 
-### `002_seed_data.sql`
-- Inserts realistic test data:
-  - Two users (admin and guest)
-  - One legal decision
-  - Tags and relations
-  - One archive and one note
-- Helps populate the database for development and testing purposes
-- **Run with:**  
-  ```bash
-  npm run db:seed
-  ```
+## How to Use
 
-## 🔄 Reset Script
+1. Open Postman.
+2. Go to the **Collections** tab and click **Import**.
+3. Select the file `Code-the-Court.postman_collection.json`.
+4. Expand the collection and run the following requests in order:
 
-To fully reset and seed your database:
+   ### 🔐 Auth
+   - `POST /api/login`: Logs in with test user `admin@example.com` / `Admin1234!` and stores the JWT token in a `{{token}}` collection variable.
 
-```bash
-npm run db:reset
-```
+   ### 📁 Archives
+   - `POST /api/archives`: Adds a new archive using the stored token.
+   - `GET /api/archives`: Verifies the archive is stored.
 
-This will:
-1. Drop the existing database (if any),
-2. Recreate it,
-3. Run `001_init_db.sql`,
-4. Run `002_seed_data.sql`.
+   ### 📁 Decisions
+   - `GET /api/decisions`: Tests open route with optional filters.
 
----
+## Notes
 
-**Requirements:**  
-Ensure `psql` is installed and the PostgreSQL user is configured in `scripts/reset_db.sh`.
+- The backend must be running locally at: `http://localhost:3000`
+- All authenticated routes use the token set by the login request:  
+- No external environment is required – the `{{token}}` variable is managed internally by the collection.
+
+## Use Case
+
+This collection is useful for:
+
+- Testing key API endpoints of the MVP
+- Demoing a full user interaction flow (login → add → fetch)
+- Validating token-based route protection
