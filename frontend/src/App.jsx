@@ -7,6 +7,8 @@ import SearchForm from './components/SearchForm';
 import AddArchivePage from './pages/AddArchivePage';
 import ArchivesPage from './pages/ArchivesPage';
 import LoginForm from './components/LoginForm';
+import Header from './components/Header';
+import PrivateRoute from './components/PrivateRoute';
 
 function Home() {
   const [decisions, setDecisions] = useState([]);
@@ -25,9 +27,13 @@ function Home() {
     <div>
       <h1>Decisions</h1>
 
-      <Link to="/add-archive">
-        <button style={{ marginBottom: '1rem' }}>➕ Ajouter une décision manuellement</button>
-      </Link>
+      {localStorage.getItem('role') === 'admin' && (
+        <Link to="/add-archive">
+          <button style={{ marginBottom: '1rem' }}>
+            ➕ Ajouter une décision manuellement
+          </button>
+        </Link>
+      )}
 
       <SearchForm onSearch={fetchDecisions} />
       <DecisionList decisions={decisions} />
@@ -37,12 +43,22 @@ function Home() {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/add-archive" element={<AddArchivePage />} />
-      <Route path="/archives" element={<ArchivesPage />} />
-      <Route path="/login" element={<LoginForm />} /> {/* ✅ ROUTE AJOUTÉE */}
-    </Routes>
+    <>
+      <Header />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<LoginForm />} />
+        <Route path="/archives" element={<ArchivesPage />} />
+        <Route
+          path="/add-archive"
+          element={
+            <PrivateRoute allowedRoles={['admin']}>
+              <AddArchivePage />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </>
   );
 }
 
