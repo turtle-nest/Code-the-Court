@@ -1,0 +1,49 @@
+.decisions-container {
+  max-width: 800px;
+  margin: auto;
+}
+
+.import-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.import-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+}
+
+.import-form button {
+  background-color: #0057e7;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.import-form button:hover {
+  background-color: #0040b0;
+}
+
+.import-message {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.import-message.success {
+  background-color: #e7f7e3;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.import-message.error {
+  background-color: #fbeaea;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}

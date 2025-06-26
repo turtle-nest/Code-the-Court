@@ -1,6 +1,7 @@
 // src/components/Header.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import '../styles/Header.css'; // nouveau fichier de style pour ce composant
 
 function Header() {
   const token = localStorage.getItem('token');
@@ -15,23 +16,32 @@ function Header() {
   };
 
   return (
-    <header>
-      <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <Link to="/">Home</Link>
-        <Link to="/archives">Archives</Link>
+    <header className="header">
+      <div className="header-left">
+        <h1 className="site-title">SocioJustice</h1>
+        <nav className="nav-links">
+          <Link to="/">Accueil</Link>
+          <Link to="/archives">Archives</Link>
+          {token && userRole === 'admin' && (
+            <Link to="/add-archive">➕ Ajouter</Link>
+          )}
+        </nav>
+      </div>
 
+      <div className="header-right">
         {token ? (
           <>
-            {userRole === 'admin' && (
-              <Link to="/add-archive">➕ Ajouter</Link>
-            )}
-            <span>{userEmail} ({userRole})</span>
-            <button onClick={handleLogout}>Logout</button>
+            <span className="user-info">
+              {userEmail} ({userRole})
+            </span>
+            <button className="logout-btn" onClick={handleLogout}>
+              Se déconnecter
+            </button>
           </>
         ) : (
-          <Link to="/login">Login</Link>
+          <Link to="/login">Connexion</Link>
         )}
-      </nav>
+      </div>
     </header>
   );
 }

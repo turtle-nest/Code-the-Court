@@ -4,7 +4,7 @@
   "description": "Portfolio project",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
+    "test": "jest --detectOpenHandles",
     "db:init": "psql -U postgres -d code_the_court -f migrations/001_init_db.sql",
     "db:create": "createdb -U postgres code_the_court",
     "db:seed": "psql -U postgres -d code_the_court -f migrations/002_seed_data.sql",
