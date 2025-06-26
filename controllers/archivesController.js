@@ -4,7 +4,7 @@ const ApiError = require('../utils/apiError');
 
 const createArchive = async (req, res, next) => {
   const { title, content, date, jurisdiction, location } = req.body;
-  const user_id = req.user?.id;
+  const user_id = req.user.id;
   const file = req.file;
 
   if (!title || !user_id || !file) {
@@ -26,6 +26,24 @@ const createArchive = async (req, res, next) => {
   }
 };
 
+const getAllArchives = async (req, res, next) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        a.id, a.title, a.content, a.date, a.jurisdiction, a.location, a.file_path,
+        u.email AS user_email
+      FROM archives a
+      JOIN users u ON a.user_id = u.id
+      ORDER BY a.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('❌ Error fetching archives:', err);
+    next(new ApiError('Failed to fetch archives', 500));
+  }
+};
+
 module.exports = {
   createArchive,
+  getAllArchives,
 };

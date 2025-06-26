@@ -3,7 +3,9 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/upload');
-const { createArchive } = require('../controllers/archivesController');
+const { createArchive, getAllArchives } = require('../controllers/archivesController');
+
+router.get('/', getAllArchives);
 
 router.post(
   '/',
