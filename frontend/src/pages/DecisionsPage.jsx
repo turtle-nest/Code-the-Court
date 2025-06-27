@@ -1,7 +1,6 @@
 // src/pages/DecisionsPage.jsx
 import React, { useState } from 'react';
-import { importFromJudilibre } from '../services/api'; // à implémenter
-import '../styles/DecisionsPage.css';
+import { importFromJudilibre } from '../services/decisions';
 
 function DecisionsPage() {
   const [formData, setFormData] = useState({

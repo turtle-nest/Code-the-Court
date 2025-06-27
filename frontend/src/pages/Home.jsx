@@ -1,39 +1,73 @@
 // src/pages/Home.jsx
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { getDecisions } from '../services/api';
-import DecisionList from '../components/DecisionList';
-import SearchForm from '../components/SearchForm';
 
-function Home() {
-  const [decisions, setDecisions] = useState([]);
-
-  const fetchDecisions = (filters = {}) => {
-    getDecisions(filters)
-      .then(data => setDecisions(data))
-      .catch(err => console.error('API error:', err));
-  };
+const Home = () => {
+  const [stats, setStats] = useState({ total: 0, archive: 0, judilibre: 0 });
+  const userEmail = localStorage.getItem('userEmail');
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
-    fetchDecisions();
-  }, []);
+    if (!token) return;
+
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/decisions/stats', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        setStats(data);
+      } catch (err) {
+        console.error('Failed to fetch stats:', err);
+      }
+    };
+
+    fetchStats();
+  }, [token]);
 
   return (
-    <div>
-      <h1>Décisions</h1>
+    <main className="home-container">
+      <h1 className="text-4xl text-green-600 text-center mt-10">
+        ✅ Tailwind fonctionne !
+      </h1>
+      <h1 className="home-title">
+        Bonjour, {userEmail || 'visiteur'} !
+      </h1>
 
-      {localStorage.getItem('role') === 'admin' && (
-        <Link to="/add-archive">
-          <button style={{ marginBottom: '1rem' }}>
-            ➕ Ajouter une décision manuellement
-          </button>
-        </Link>
+      {!token ? (
+        <p className="home-message">
+          Connectez-vous pour accéder aux statistiques et aux fonctionnalités.
+          <br />
+          <a href="/login" className="login-link">Se connecter</a>
+        </p>
+      ) : (
+        <>
+          <section className="stat-grid">
+            <div className="stat-card">
+              <h2>Décisions totales</h2>
+              <p>{stats.total}</p>
+            </div>
+            <div className="stat-card">
+              <h2>Ajouts manuels</h2>
+              <p>{stats.archive}</p>
+            </div>
+            <div className="stat-card">
+              <h2>Import Judilibre</h2>
+              <p>{stats.judilibre}</p>
+            </div>
+          </section>
+
+          <section className="action-grid">
+            <button onClick={() => (window.location.href = '/decisions')}>Importer depuis Judilibre</button>
+            <button onClick={() => (window.location.href = '/archives/new')}>Ajouter une décision manuellement</button>
+            <button onClick={() => (window.location.href = '/details')}>Consulter les décisions</button>
+            <button onClick={() => (window.location.href = '/search')}>Rechercher des décisions</button>
+          </section>
+        </>
       )}
-
-      <SearchForm onSearch={fetchDecisions} />
-      <DecisionList decisions={decisions} />
-    </div>
+    </main>
   );
-}
+};
 
 export default Home;

@@ -1,4 +1,4 @@
-// frontend/src/utils/api.js
+// frontend/src/utils/apiFetch.js
 export async function apiFetch(url, options = {}) {
   const token = localStorage.getItem('token');
 

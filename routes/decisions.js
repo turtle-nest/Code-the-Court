@@ -1,8 +1,10 @@
 // routes/decisions.js
+const authMiddleware = require('../middlewares/authMiddleware');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const db = require('../config/db');
 const { getAllDecisions } = require('../controllers/decisionsController');
 const { importDecisionsFromJudilibre } = require('../controllers/decisionsController');
 const ApiError = require('../utils/apiError');
@@ -26,6 +28,17 @@ router.get('/import/mock', (req, res, next) => {
       return next(new ApiError('Invalid mock data format', 500));
     }
   });
+});
+
+router.get('/stats', authMiddleware, async (req, res) => {
+  const { rows } = await db.query(`
+    SELECT 
+      COUNT(*) FILTER (WHERE source = 'judilibre')::int AS judilibre,
+      COUNT(*) FILTER (WHERE source = 'archive')::int AS archive,
+      COUNT(*)::int AS total
+    FROM decisions
+  `);
+  res.json(rows[0]);
 });
 
 module.exports = router;
