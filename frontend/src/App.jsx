@@ -11,31 +11,39 @@ import Layout from './components/Layout';
 function App() {
   return (
     <Routes>
+      {/* Page de connexion (publique, sans layout) */}
       <Route path="/login" element={<LoginForm />} />
 
+      {/* Page d'accueil (publique) */}
       <Route
         path="/"
         element={
-          <PrivateRoute>
-            <Layout><Home /></Layout>
-          </PrivateRoute>
+          <Layout title="Tableau de bord">
+            <Home />
+          </Layout>
         }
       />
 
+      {/* Ajout d'archive (protégé, admin uniquement) */}
       <Route
         path="/add-archive"
         element={
           <PrivateRoute allowedRoles={['admin']}>
-            <Layout><AddArchivePage /></Layout>
+            <Layout title="Saisir une archive">
+              <AddArchivePage />
+            </Layout>
           </PrivateRoute>
         }
       />
 
+      {/* Import de décisions (protégé) */}
       <Route
         path="/archives"
         element={
           <PrivateRoute>
-            <Layout><DecisionsPage /></Layout>
+            <Layout title="Importer des décisions">
+              <DecisionsPage />
+            </Layout>
           </PrivateRoute>
         }
       />
