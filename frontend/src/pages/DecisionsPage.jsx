@@ -1,6 +1,8 @@
 // src/pages/DecisionsPage.jsx
 import React, { useState } from 'react';
 import { importFromJudilibre } from '../services/decisions';
+import Sidebar from '../components/Sidebar'; // si tu l’as
+import Header from '../components/Header';   // à créer si besoin
 
 function DecisionsPage() {
   const [formData, setFormData] = useState({
@@ -9,8 +11,7 @@ function DecisionsPage() {
     startDate: '',
     endDate: '',
   });
-
-  const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: string }
+  const [message, setMessage] = useState(null);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -34,74 +35,81 @@ function DecisionsPage() {
   };
 
   return (
-    <div className="decisions-container">
-      <h1>Imports Judilibre</h1>
-      <p>
-        <em>
-          Utilisez les filtres ci-dessous pour importer des décisions depuis la
-          base Judilibre.
-        </em>
-      </p>
+    <div className="flex h-screen">
+      <div className="flex-1 p-8">
+        <p className="italic mb-4">
+          Utilisez les filtres ci-dessous pour importer des décisions depuis la base Judilibre.
+        </p>
 
-      <form onSubmit={handleSubmit} className="import-form">
-        <label>
-          Juridiction :
-          <select
-            name="jurisdiction"
-            value={formData.jurisdiction}
-            onChange={handleChange}
-            required
+        <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
+          <div>
+            <label className="block font-semibold">Juridiction :</label>
+            <select
+              name="jurisdiction"
+              value={formData.jurisdiction}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              required
+            >
+              <option value="">-- Choisir --</option>
+              <option value="Cour d'appel">Cour d'appel</option>
+              <option value="Cour de cassation">Cour de cassation</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-semibold">Type d’affaire :</label>
+            <select
+              name="caseType"
+              value={formData.caseType}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              required
+            >
+              <option value="">-- Choisir --</option>
+              <option value="Civil">Civil</option>
+              <option value="Pénal">Pénal</option>
+              <option value="Social">Social</option>
+              <option value="Commercial">Commercial</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-semibold">Date de début :</label>
+            <input
+              type="date"
+              name="startDate"
+              value={formData.startDate}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold">Date de fin :</label>
+            <input
+              type="date"
+              name="endDate"
+              value={formData.endDate}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
-            <option value="">-- Choisir --</option>
-            <option value="Cour d'appel">Cour d'appel</option>
-            <option value="Cour de cassation">Cour de cassation</option>
-          </select>
-        </label>
+            Lancer l’import
+          </button>
+        </form>
 
-        <label>
-          Type d’affaire :
-          <select
-            name="caseType"
-            value={formData.caseType}
-            onChange={handleChange}
-            required
-          >
-            <option value="">-- Choisir --</option>
-            <option value="Civil">Civil</option>
-            <option value="Pénal">Pénal</option>
-            <option value="Social">Social</option>
-            <option value="Commercial">Commercial</option>
-          </select>
-        </label>
-
-        <label>
-          Date de début :
-          <input
-            type="date"
-            name="startDate"
-            value={formData.startDate}
-            onChange={handleChange}
-          />
-        </label>
-
-        <label>
-          Date de fin :
-          <input
-            type="date"
-            name="endDate"
-            value={formData.endDate}
-            onChange={handleChange}
-          />
-        </label>
-
-        <button type="submit">Lancer l’import</button>
-      </form>
-
-      {message && (
-        <div className={`import-message ${message.type}`}>
-          {message.text}
-        </div>
-      )}
+        {message && (
+          <div className={`mt-4 font-semibold ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+            {message.text}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

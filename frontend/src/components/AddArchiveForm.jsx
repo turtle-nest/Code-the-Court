@@ -31,7 +31,6 @@ const AddArchiveForm = () => {
   });
 
   const handleSubmit = async (e) => {
-    console.log('[📨] handleSubmit triggered');
     e.preventDefault();
     if (!file || !title || !date || !jurisdiction || !caseType) {
       setMessage('❌ Tous les champs sont requis');
@@ -55,7 +54,7 @@ const AddArchiveForm = () => {
       const now = new Date().toLocaleString('fr-FR');
       setMessage(`✅ Décision enregistrée le ${now}`);
       setIsError(false);
-      // reset form
+
       setTitle('');
       setDate('');
       setJurisdiction('');
@@ -68,51 +67,84 @@ const AddArchiveForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="add-archive-form">
-      <h2>Ajouter un fichier au format pdf :</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 bg-white shadow rounded-lg p-6"
+    >
+      <h2 className="text-lg font-semibold mb-4">
+        Ajouter un fichier au format pdf :
+      </h2>
 
       <input
         type="text"
         placeholder="Titre ou référence de la décision"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        className="w-full border rounded px-3 py-2"
       />
 
       <input
         type="date"
         value={date}
         onChange={(e) => setDate(e.target.value)}
+        className="w-full border rounded px-3 py-2"
       />
 
-      <select value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)}>
-        <option value="">-- Juridiction --</option>
-        <option value="Cour d'appel">Cour d'appel</option>
-        <option value="Tribunal judiciaire">Tribunal judiciaire</option>
-        <option value="Conseil des prud'hommes">Conseil des prud'hommes</option>
-      </select>
+      <div className="flex gap-4">
+        <select
+          value={jurisdiction}
+          onChange={(e) => setJurisdiction(e.target.value)}
+          className="w-1/2 border rounded px-3 py-2"
+        >
+          <option value="">-- Juridiction --</option>
+          <option value="Cour d'appel">Cour d'appel</option>
+          <option value="Tribunal judiciaire">Tribunal judiciaire</option>
+          <option value="Conseil des prud'hommes">Conseil des prud'hommes</option>
+        </select>
 
-      <select value={caseType} onChange={(e) => setCaseType(e.target.value)}>
-        <option value="">-- Type d'affaire --</option>
-        <option value="Civil">Civil</option>
-        <option value="Pénal">Pénal</option>
-        <option value="Social">Social</option>
-      </select>
+        <select
+          value={caseType}
+          onChange={(e) => setCaseType(e.target.value)}
+          className="w-1/2 border rounded px-3 py-2"
+        >
+          <option value="">-- Type d'affaire --</option>
+          <option value="Civil">Civil</option>
+          <option value="Pénal">Pénal</option>
+          <option value="Social">Social</option>
+        </select>
+      </div>
 
-      <div {...getRootProps({ className: 'dropzone' })}>
+      <div
+        {...getRootProps()}
+        className="border-2 border-dashed border-gray-400 rounded px-4 py-6 text-center cursor-pointer bg-gray-50 hover:bg-gray-100"
+      >
         <input {...getInputProps()} />
         {isDragActive ? (
-          <p>Déposez le fichier ici...</p>
+          <p className="text-sm text-gray-700">Déposez le fichier ici...</p>
         ) : (
-          <p>Glissez-déposez un fichier ici ou cliquez pour sélectionner</p>
+          <p className="text-sm text-gray-700">
+            Glissez-déposez un fichier ici ou cliquez pour sélectionner
+          </p>
         )}
       </div>
 
-      {file && <p>📄 {file.name}</p>}
+      {file && (
+        <p className="text-sm text-green-600 font-medium">
+          📄 {file.name}
+        </p>
+      )}
 
-      <button type="submit">Enregistrer la décision</button>
+      <button
+        type="submit"
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+        Enregistrer la décision
+      </button>
 
       {message && (
-        <p style={{ color: isError ? 'red' : 'green' }}>{message}</p>
+        <p className={`mt-2 font-semibold ${isError ? 'text-red-600' : 'text-green-600'}`}>
+          {message}
+        </p>
       )}
     </form>
   );
