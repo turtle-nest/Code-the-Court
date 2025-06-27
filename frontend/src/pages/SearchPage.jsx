@@ -1,13 +1,14 @@
 // src/pages/SearchPage.jsx
 import React, { useState } from 'react';
-import Sidebar from '../components/Sidebar';
-import Header from '../components/Header';
+import { useNavigate } from 'react-router-dom';
 import SearchForm from '../components/SearchForm';
 // import ResultsList from '../components/ResultsList'; // à faire plus tard
 
 const SearchPage = () => {
   const [results, setResults] = useState([]);
   const [message, setMessage] = useState(null);
+  const navigate = useNavigate();
+
 
   const handleSearch = async (filters) => {
     try {
@@ -55,7 +56,10 @@ const SearchPage = () => {
                   ))}
                 </div>
               </div>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              <button
+                onClick={() => navigate(`/decision/${r.id}`)}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
                 Voir détails
               </button>
             </div>

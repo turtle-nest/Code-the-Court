@@ -7,6 +7,7 @@ import DecisionsPage from './pages/DecisionsPage';
 import LoginForm from './pages/LoginForm';
 import RegisterForm from './pages/RegisterForm';
 import SearchPage from './pages/SearchPage';
+import DecisionDetailPage from './pages/DecisionDetailPage';
 import PrivateRoute from './components/PrivateRoute';
 import Layout from './components/Layout';
 
@@ -73,6 +74,18 @@ function App() {
           <PrivateRoute>
             <Layout title="Rechercher des décisions">
               <SearchPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+
+      {/* Détail d'une décision (protégé) */}
+      <Route
+        path="/decision/:id"
+        element={
+          <PrivateRoute>
+            <Layout title="Détails de la décision">
+              <DecisionDetailPage />
             </Layout>
           </PrivateRoute>
         }

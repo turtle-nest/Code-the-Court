@@ -1,8 +1,6 @@
 // src/pages/DecisionsPage.jsx
 import React, { useState } from 'react';
 import { importFromJudilibre } from '../services/decisions';
-import Sidebar from '../components/Sidebar'; // si tu l’as
-import Header from '../components/Header';   // à créer si besoin
 
 function DecisionsPage() {
   const [formData, setFormData] = useState({

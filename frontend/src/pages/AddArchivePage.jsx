@@ -1,7 +1,5 @@
 // src/pages/AddArchivePage.jsx
 import React from 'react';
-import Sidebar from '../components/Sidebar';
-import Header from '../components/Header';
 import AddArchiveForm from '../components/AddArchiveForm';
 
 const AddArchivePage = () => {
