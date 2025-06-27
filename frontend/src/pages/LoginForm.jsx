@@ -1,6 +1,5 @@
-// src/pages/LoginForm.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { apiFetch } from '../utils/apiFetch';
 
 const LoginForm = () => {
@@ -19,37 +18,60 @@ const LoginForm = () => {
       });
 
       localStorage.setItem('token', token);
-      localStorage.setItem('userEmail', userEmail); // utile uniquement si backend renvoie l'email
-      localStorage.setItem('role', role);           // utile pour restreindre l'UI
-
+      localStorage.setItem('userEmail', userEmail);
+      localStorage.setItem('role', role);
       navigate('/');
     } catch (err) {
       console.error('[❌] Login error:', err);
-      setError('Identifiants invalides ou compte non validé');
+      setError('Identifiants incorrects');
     }
   };
 
   return (
-    <form onSubmit={handleLogin} className="login-form">
-      <h2>Connexion</h2>
-      <input
-        type="email"
-        placeholder="Adresse email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
+    <div className="flex flex-1">
 
-      <input
-        type="password"
-        placeholder="Mot de passe"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+      <main className="flex-1 flex items-center justify-center">
+        <form onSubmit={handleLogin} className="w-full max-w-md bg-white p-8 rounded shadow-md">
+          <h2 className="text-xl font-semibold text-center text-gray-800 mb-6">
+            Connexion à votre espace :
+          </h2>
 
-      <button type="submit">Se connecter</button>
+          <input
+            type="email"
+            placeholder="Nom d’utilisateur ou Email"
+            className="w-full border border-gray-300 rounded p-2 mb-4"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-    </form>
+          <input
+            type="password"
+            placeholder="Mot de passe"
+            className="w-full border border-gray-300 rounded p-2 mb-4"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+          >
+            Se connecter
+          </button>
+
+          {error && (
+            <p className="text-sm text-red-600 mt-4 text-center">
+              {error}
+            </p>
+          )}
+
+          <div className="mt-4 text-sm flex items-center">
+            <input type="checkbox" id="remember" className="mr-2" />
+            <label htmlFor="remember">Se souvenir de moi</label>
+          </div>
+        </form>
+      </main>
+    </div>
   );
 };
 

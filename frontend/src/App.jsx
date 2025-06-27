@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import AddArchivePage from './pages/AddArchivePage';
 import DecisionsPage from './pages/DecisionsPage';
 import LoginForm from './pages/LoginForm';
+import RegisterForm from './pages/RegisterForm';
 import PrivateRoute from './components/PrivateRoute';
 import Layout from './components/Layout';
 
@@ -12,7 +13,23 @@ function App() {
   return (
     <Routes>
       {/* Page de connexion (publique, sans layout) */}
-      <Route path="/login" element={<LoginForm />} />
+      <Route
+        path="/login"
+        element={
+          <Layout title="Page d’authentification">
+            <LoginForm />
+          </Layout>
+        }
+      />
+
+      <Route
+        path="/register"
+        element={
+          <Layout title="Demande d’inscription">
+            <RegisterForm />
+          </Layout>
+        }
+      />
 
       {/* Page d'accueil (publique) */}
       <Route

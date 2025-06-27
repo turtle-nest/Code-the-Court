@@ -26,23 +26,20 @@ function Header({ title }) {
       </div>
 
       <div className="flex items-center gap-4 text-sm">
-        {token ? (
-          <>
-            <span>{userEmail} ({userRole})</span>
-            <button
-              onClick={handleLogout}
-              className="bg-white text-blue-800 px-3 py-1 rounded hover:bg-gray-100 transition"
-            >
-              Se déconnecter
-            </button>
-          </>
-        ) : (
+        {!token ? (
           <Link
             to="/login"
             className="bg-white text-blue-800 px-3 py-1 rounded hover:bg-gray-100 transition"
           >
             Connexion
           </Link>
+        ) : (
+          <>
+            <span>{userEmail} ({userRole})</span>
+            <button onClick={handleLogout} className="...">
+              Se déconnecter
+            </button>
+          </>
         )}
       </div>
     </header>
