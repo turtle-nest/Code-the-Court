@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { apiFetch } from '../utils/apiFetch';
 
 const LoginForm = () => {
@@ -7,6 +7,14 @@ const LoginForm = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('expired') === '1') {
+      setError("⏳ Votre session a expiré. Veuillez vous reconnecter.");
+    }
+  }, [location.search]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -23,13 +31,17 @@ const LoginForm = () => {
       navigate('/');
     } catch (err) {
       console.error('[❌] Login error:', err);
-      setError('Identifiants incorrects');
+
+      if (err.message === 'pending') {
+        setError("⏳ Votre compte est en attente de validation par un administrateur.");
+      } else {
+        setError("Identifiants incorrects ou compte non autorisé.");
+      }
     }
   };
 
   return (
     <div className="flex flex-1">
-
       <main className="flex-1 flex items-center justify-center">
         <form onSubmit={handleLogin} className="w-full max-w-md bg-white p-8 rounded shadow-md">
           <h2 className="text-xl font-semibold text-center text-gray-800 mb-6">

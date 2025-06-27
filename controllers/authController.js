@@ -19,6 +19,11 @@ const login = async (req, res, next) => {
       return next(new ApiError('Invalid credentials', 401));
     }
 
+    // 🔒 Status Check
+    if (user.status !== 'approved') {
+      return res.status(401).json({ message: 'pending' });
+    }
+
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
     if (!passwordMatch) {
       return next(new ApiError('Invalid credentials', 401));

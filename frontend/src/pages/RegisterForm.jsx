@@ -102,7 +102,9 @@ const RegisterForm = () => {
 
           {success && (
             <p className="text-green-700 text-sm mt-4">
-              ✅ Votre demande d’inscription a été envoyée avec succès. Vous recevrez un email lorsque votre compte sera validé par un administrateur.
+              ✅ Votre demande d’inscription a bien été envoyée.<br />
+              ⏳ Votre compte est actuellement en attente de validation.<br />
+              Vous recevrez un email lorsque votre demande aura été examinée par un administrateur.
             </p>
           )}
 
