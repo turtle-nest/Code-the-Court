@@ -6,6 +6,7 @@ import AddArchivePage from './pages/AddArchivePage';
 import DecisionsPage from './pages/DecisionsPage';
 import LoginForm from './pages/LoginForm';
 import RegisterForm from './pages/RegisterForm';
+import SearchPage from './pages/SearchPage';
 import PrivateRoute from './components/PrivateRoute';
 import Layout from './components/Layout';
 
@@ -60,6 +61,18 @@ function App() {
           <PrivateRoute>
             <Layout title="Importer des décisions">
               <DecisionsPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+
+      {/* Recherche de décisions (protégé) */}
+      <Route
+        path="/search"
+        element={
+          <PrivateRoute>
+            <Layout title="Rechercher des décisions">
+              <SearchPage />
             </Layout>
           </PrivateRoute>
         }

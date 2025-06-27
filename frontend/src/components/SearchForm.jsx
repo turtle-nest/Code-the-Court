@@ -1,13 +1,15 @@
+// src/components/SearchForm.jsx
 import { useState, useEffect } from 'react';
 
 export default function SearchForm({ onSearch }) {
-  const [date, setDate] = useState('');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
   const [juridiction, setJuridiction] = useState('');
   const [typeAffaire, setTypeAffaire] = useState('');
+  const [keyword, setKeyword] = useState('');
   const [juridictions, setJuridictions] = useState([]);
   const [types, setTypes] = useState([]);
 
-  // Fetch juridictions and types on mount
   useEffect(() => {
     fetch('http://localhost:3000/api/juridictions')
       .then(res => res.json())
@@ -23,45 +25,72 @@ export default function SearchForm({ onSearch }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSearch({
-      date,
+      startDate: dateStart,
+      endDate: dateEnd,
       juridiction,
-      type_affaire: typeAffaire
+      type_affaire: typeAffaire,
+      keywords: keyword
     });
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginBottom: 24 }}>
-      <input
-        type="date"
-        value={date}
-        onChange={e => setDate(e.target.value)}
-        placeholder="Date"
-      />
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl">
+      <p className="italic mb-2">
+        Rechercher dans le corpus selon les critères suivants :
+      </p>
 
-      <select
-        value={juridiction}
-        onChange={e => setJuridiction(e.target.value)}
-        style={{ marginLeft: 8 }}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <select
+          value={juridiction}
+          onChange={e => setJuridiction(e.target.value)}
+          className="border px-3 py-2 rounded"
+        >
+          <option value="">-- Juridiction --</option>
+          {juridictions.map(j => (
+            <option key={j.id} value={j.name}>{j.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={typeAffaire}
+          onChange={e => setTypeAffaire(e.target.value)}
+          className="border px-3 py-2 rounded"
+        >
+          <option value="">-- Type d'affaire --</option>
+          {types.map(t => (
+            <option key={t.id} value={t.label}>{t.label}</option>
+          ))}
+        </select>
+
+        <input
+          type="text"
+          value={keyword}
+          onChange={e => setKeyword(e.target.value)}
+          placeholder="Mots-clés"
+          className="border px-3 py-2 rounded"
+        />
+      </div>
+
+      <div className="flex gap-4">
+        <input
+          type="date"
+          value={dateStart}
+          onChange={e => setDateStart(e.target.value)}
+          className="border px-3 py-2 rounded"
+        />
+        <input
+          type="date"
+          value={dateEnd}
+          onChange={e => setDateEnd(e.target.value)}
+          className="border px-3 py-2 rounded"
+        />
+      </div>
+
+      <button
+        type="submit"
+        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
       >
-        <option value="">-- Juridiction --</option>
-        {juridictions.map(j => (
-          <option key={j.id} value={j.name}>{j.name}</option>
-        ))}
-      </select>
-
-      <select
-        value={typeAffaire}
-        onChange={e => setTypeAffaire(e.target.value)}
-        style={{ marginLeft: 8 }}
-      >
-        <option value="">-- Type d'affaire --</option>
-        {types.map(t => (
-          <option key={t.id} value={t.label}>{t.label}</option>
-        ))}
-      </select>
-
-      <button type="submit" style={{ marginLeft: 8 }}>
-        Rechercher
+        Lancer la recherche
       </button>
     </form>
   );

@@ -7,10 +7,10 @@ VALUES
 -- Insert test decision
 INSERT INTO decisions (external_id, title, content, date, jurisdiction, source)
 VALUES
-  ('EX123456', 'Test Decision Title', 'Lorem ipsum dolor sit amet...', '2024-01-10', 'Cour de cassation', 'api');
+  ('EX123456', 'Test Decision Title', 'Lorem ipsum dolor sit amet...', '2024-01-10', 'Cour de cassation', 'judilibre');
 
 INSERT INTO decisions (date, jurisdiction, case_type, title, content, source)
-VALUES ('2024-01-15', 'Cour d''appel', 'Civil', 'Affaire Dupont vs Martin', 'Texte de la décision.', 'api');
+VALUES ('2024-01-15', 'Cour d''appel', 'Civil', 'Affaire Dupont vs Martin', 'Texte de la décision.', 'judilibre');
 
 -- Insert test tags
 INSERT INTO tags (label)
