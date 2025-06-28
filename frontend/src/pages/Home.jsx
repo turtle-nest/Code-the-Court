@@ -26,20 +26,24 @@ const Home = () => {
   }, []);
 
   return (
-    <div>
-      <p className="italic text-lg mb-10">
-        Bienvenue dans l’interface de gestion et d’analyse des décisions de justice.
-      </p>
+    <div className="flex flex-col justify-between h-[calc(100vh-8rem)] px-8">
+      <div>
+        <p className="italic text-lg mb-10">
+          Bienvenue dans l’interface de gestion et d’analyse des décisions de justice.
+        </p>
 
-      {loading && <p>Chargement des statistiques…</p>}
-      {error && <p className="text-red-600">{error}</p>}
+        {loading && <p>Chargement des statistiques…</p>}
+        {error && <p className="text-red-600">{error}</p>}
+      </div>
 
       {!loading && !error && (
-        <Stat
-          totalDecisions={totalDecisions}
-          lastImportCount={lastImportCount}
-          lastImportDate={lastImportDate}
-        />
+        <div className="mb-10">
+          <Stat
+            totalDecisions={totalDecisions}
+            lastImportCount={lastImportCount}
+            lastImportDate={lastImportDate}
+          />
+        </div>
       )}
     </div>
   );

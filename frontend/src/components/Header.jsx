@@ -1,3 +1,4 @@
+// src/components/Header.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -14,7 +15,7 @@ function Header({ title }) {
   };
 
   return (
-    <header className="relative bg-blue-800 text-white px-8 h-28 flex items-center justify-between">
+    <header className="relative bg-blue-800 text-white px-8 h-32 flex items-center justify-between">
       {/* Logo à gauche */}
       <div className="flex items-center h-full">
         <Link to="/">
