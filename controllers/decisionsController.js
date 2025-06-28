@@ -67,6 +67,23 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
   }
 };
 
+// GET /api/decisions/stats
+const getDecisionsStats = async (req, res, next) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT 
+        COUNT(*) FILTER (WHERE source = 'judilibre')::int AS judilibre,
+        COUNT(*) FILTER (WHERE source = 'archive')::int AS archive,
+        COUNT(*)::int AS total
+      FROM decisions
+    `);
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    console.error('❌ Error fetching decisions stats:', error);
+    next(new ApiError('Failed to fetch stats', 500));
+  }
+};
+
 // GET /api/decisions/juridictions
 const getJurisdictions = async (req, res, next) => {
   try {
@@ -98,6 +115,7 @@ const getCaseTypes = async (req, res, next) => {
 module.exports = {
   getAllDecisions,
   importDecisionsFromJudilibre,
+  getDecisionsStats,
   getJurisdictions,
   getCaseTypes,
 };
