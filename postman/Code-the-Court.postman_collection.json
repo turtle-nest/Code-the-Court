@@ -291,6 +291,67 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Notes",
+      "item": [
+        {
+          "name": "POST /api/notes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/notes",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "notes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target_id\": \"decision-123\",\n  \"target_type\": \"decision\",\n  \"content\": \"Test note content\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 201\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has message and note\", function () {",
+                  "  var jsonData = pm.response.json();",
+                  "  pm.expect(jsonData).to.have.property(\"message\");",
+                  "  pm.expect(jsonData).to.have.property(\"note\");",
+                  "  pm.expect(jsonData.note).to.have.property(\"user_id\");",
+                  "  pm.expect(jsonData.note).to.have.property(\"target_id\");",
+                  "  pm.expect(jsonData.note).to.have.property(\"target_type\");",
+                  "  pm.expect(jsonData.note).to.have.property(\"content\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
