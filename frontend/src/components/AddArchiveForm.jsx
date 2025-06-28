@@ -8,6 +8,7 @@ const AddArchiveForm = () => {
   const [date, setDate] = useState('');
   const [jurisdiction, setJurisdiction] = useState('');
   const [caseType, setCaseType] = useState('');
+  const [keywords, setKeywords] = useState('');
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState(null);
   const [isError, setIsError] = useState(false);
@@ -49,6 +50,7 @@ const AddArchiveForm = () => {
     formData.append('date', date);
     formData.append('jurisdiction', jurisdiction);
     formData.append('content', caseType);
+    formData.append('keywords', keywords); // ✅ Ajout du champ mots-clés
     formData.append('pdf', file);
 
     try {
@@ -65,6 +67,7 @@ const AddArchiveForm = () => {
       setDate('');
       setJurisdiction('');
       setCaseType('');
+      setKeywords('');
       setFile(null);
     } catch (err) {
       console.error('[❌] Upload error:', err);
@@ -122,6 +125,15 @@ const AddArchiveForm = () => {
           <option value="Social">Social</option>
         </select>
       </div>
+
+      {/* ✅ Champ mots-clés */}
+      <input
+        type="text"
+        placeholder="Mots-clés (séparés par des virgules)"
+        value={keywords}
+        onChange={(e) => setKeywords(e.target.value)}
+        className="w-full border rounded px-3 py-2"
+      />
 
       <div
         {...getRootProps()}
