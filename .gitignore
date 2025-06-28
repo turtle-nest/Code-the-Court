@@ -1,6 +1,49 @@
+# === ENVIRONMENT VARIABLES ===
+# Never commit environment-specific secrets
 backend/.env
-backend/uploads/*
-!/uploads/.gitkeep
+
+# === NODE DEPENDENCIES ===
+# Node modules installed locally
 backend/node_modules/
+
+# === UPLOADS ===
+# Ignore all uploaded files but keep the folder
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# === LOCAL SCRIPTS ===
+# Optional: ignore helper scripts not meant for production
 backend/createUser.js
+
+# === MACOS SYSTEM FILES ===
+# Finder creates .DS_Store automatically on macOS
 .DS_Store
+
+# === LOG FILES ===
+# Ignore logs and debug files
+logs/
+*.log
+npm-debug.log*
+
+# === COVERAGE FILES ===
+# Jest or any test coverage output
+coverage/
+*.lcov
+
+# === TEST ARTIFACTS ===
+# Snapshots, output folders, or temporary test files
+tests/**/__snapshots__/
+tests/**/__output__/
+
+# === EDITOR / IDE SETTINGS ===
+# VSCode workspace settings or other IDE metadata
+.vscode/
+
+# === BUILD / DIST OUTPUT ===
+# For any build or transpile step (optional)
+dist/
+build/
+
+# === OS / GENERAL JUNK FILES ===
+# Thumbs.db for Windows, other general cache
+Thumbs.db
