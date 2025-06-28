@@ -18,6 +18,7 @@ echo "📥 Running migrations in order..."
 
 psql -U "$DB_USER" -d "$DB_NAME" -f "$MIGRATIONS_DIR/001_init_db.sql"
 psql -U "$DB_USER" -d "$DB_NAME" -f "$MIGRATIONS_DIR/002_seed_data.sql"
-psql -U "$DB_USER" -d "$DB_NAME" -f "$MIGRATIONS_DIR/003_mock_decisions.sql"
+psql -U "$DB_USER" -d "$DB_NAME" -f "$MIGRATIONS_DIR/003_mock_archives.sql"
+psql -U "$DB_USER" -d "$DB_NAME" -f "$MIGRATIONS_DIR/004_mock_judilibre.sql"
 
 echo "✅ Database '$DB_NAME' has been initialized successfully."

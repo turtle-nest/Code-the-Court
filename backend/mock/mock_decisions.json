@@ -1,18 +1,86 @@
-[
-  {
-    "id": "mock-001",
-    "dateDecision": "2024-01-15",
-    "juridiction": "Cour d'appel",
-    "typeAffaire": "Civil",
-    "titre": "Affaire Dupont c/ Martin",
-    "contenu": "Texte de la décision simulée..."
-  },
-  {
-    "id": "mock-002",
-    "dateDecision": "2024-03-22",
-    "juridiction": "Cour de cassation",
-    "typeAffaire": "Pénal",
-    "titre": "Affaire République c/ Durant",
-    "contenu": "Extrait du jugement fictif..."
-  }
-]
+{
+  "count": 10,
+  "timestamp": "2025-06-28T23:00:00Z",
+  "decisions": [
+    {
+      "external_id": "JDLB-0001",
+      "title": "Arrêt Cour de cassation - Civil",
+      "jurisdiction": "Cour de cassation",
+      "case_type": "Civil",
+      "date": "2024-01-15",
+      "content": "Contenu fictif décision 1."
+    },
+    {
+      "external_id": "JDLB-0002",
+      "title": "Arrêt Cour de cassation - Pénal",
+      "jurisdiction": "Cour de cassation",
+      "case_type": "Pénal",
+      "date": "2024-02-10",
+      "content": "Contenu fictif décision 2."
+    },
+    {
+      "external_id": "JDLB-0003",
+      "title": "Arrêt Cour de cassation - Social",
+      "jurisdiction": "Cour de cassation",
+      "case_type": "Social",
+      "date": "2024-03-05",
+      "content": "Contenu fictif décision 3."
+    },
+    {
+      "external_id": "JDLB-0004",
+      "title": "Arrêt Cour de cassation - Commercial",
+      "jurisdiction": "Cour de cassation",
+      "case_type": "Commercial",
+      "date": "2024-04-12",
+      "content": "Contenu fictif décision 4."
+    },
+    {
+      "external_id": "JDLB-0005",
+      "title": "Arrêt Cour d'appel - Civil",
+      "jurisdiction": "Cour d'appel",
+      "case_type": "Civil",
+      "date": "2024-05-01",
+      "content": "Contenu fictif décision 5."
+    },
+    {
+      "external_id": "JDLB-0006",
+      "title": "Arrêt Cour d'appel - Pénal",
+      "jurisdiction": "Cour d'appel",
+      "case_type": "Pénal",
+      "date": "2024-05-20",
+      "content": "Contenu fictif décision 6."
+    },
+    {
+      "external_id": "JDLB-0007",
+      "title": "Arrêt Cour d'appel - Social",
+      "jurisdiction": "Cour d'appel",
+      "case_type": "Social",
+      "date": "2024-06-02",
+      "content": "Contenu fictif décision 7."
+    },
+    {
+      "external_id": "JDLB-0008",
+      "title": "Arrêt Cour d'appel - Commercial",
+      "jurisdiction": "Cour d'appel",
+      "case_type": "Commercial",
+      "date": "2024-06-10",
+      "content": "Contenu fictif décision 8."
+    },
+    {
+      "external_id": "JDLB-0009",
+      "title": "Arrêt Cour d'appel - Civil 2",
+      "jurisdiction": "Cour d'appel",
+      "case_type": "Civil",
+      "date": "2024-06-15",
+      "content": "Contenu fictif décision 9."
+    },
+    {
+      "external_id": "JDLB-0010",
+      "title": "Arrêt Cour de cassation - Pénal 2",
+      "jurisdiction": "Cour de cassation",
+      "case_type": "Pénal",
+      "date": "2024-06-20",
+      "content": "Contenu fictif décision 10."
+    }
+  ]
+}
