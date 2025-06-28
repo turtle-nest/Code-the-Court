@@ -1,3 +1,4 @@
+// backend/controllers/decisionsController.js
 const db = require('../config/db');
 const ApiError = require('../utils/apiError');
 const { fetchDecisionsFromJudilibre } = require('../services/judilibreService');
@@ -62,14 +63,35 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
 // GET /api/decisions/stats
 const getDecisionsStats = async (req, res, next) => {
   try {
-    const { rows } = await db.query(`
+    // 1️⃣ Total des décisions (avec source si tu veux)
+    const { rows: totalRows } = await db.query(`
       SELECT 
         COUNT(*) FILTER (WHERE source = 'judilibre')::int AS judilibre,
         COUNT(*) FILTER (WHERE source = 'archive')::int AS archive,
         COUNT(*)::int AS total
       FROM decisions
     `);
-    res.status(200).json(rows[0]);
+
+    // 2️⃣ Dernier import (nombre + date)
+    const { rows: lastImportRows } = await db.query(`
+      SELECT 
+        COUNT(*)::int AS count,
+        MAX(date)::date AS date
+      FROM decisions
+      WHERE imported_at = (
+        SELECT MAX(imported_at) FROM decisions
+      )
+    `);
+
+    const stats = {
+      total: totalRows[0].total,
+      lastImport: {
+        count: lastImportRows[0].count,
+        date: lastImportRows[0].date || null
+      }
+    };
+
+    res.status(200).json(stats);
   } catch (error) {
     console.error('❌ Error fetching stats:', error);
     next(new ApiError('Failed to fetch stats', 500));

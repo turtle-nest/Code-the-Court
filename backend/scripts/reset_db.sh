@@ -1,25 +1,24 @@
 #!/bin/bash
 
-# Script to create the PostgreSQL database and initialize it using a SQL schema file
-# Requires psql installed and access to a PostgreSQL user
-
 DB_NAME="code_the_court"
-SQL_FILE="migrations/001_init_db.sql"
 DB_USER="nicolas"
+MIGRATIONS_DIR="../migrations"
 
 echo "🔄 Checking if database '$DB_NAME' exists..."
 
-# Check if the database already exists
-if psql -U "$DB_USER" -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1; then
-  echo "⚠️  Database '$DB_NAME' already exists."
-else
-  echo "🆕 Creating database '$DB_NAME'..."
-  createdb -U "$DB_USER" "$DB_NAME"
+if psql -U "$DB_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1; then
+  echo "⚠️  Database '$DB_NAME' already exists. Dropping it..."
+  dropdb -U "$DB_USER" "$DB_NAME"
 fi
 
-echo "📥 Running schema file '$SQL_FILE'..."
-# Execute the schema SQL file to initialize tables and structure
-psql -U "$DB_USER" -d "$DB_NAME" -f "$SQL_FILE"
-psql -U "$DB_USER" -d "$DB_NAME" -f "migrations/002_seed_data.sql"
+echo "🆕 Creating database '$DB_NAME'..."
+createdb -U "$DB_USER" "$DB_NAME"
+
+echo "📥 Running migrations in order..."
+
+psql -U "$DB_USER" -d "$DB_NAME" -f "$MIGRATIONS_DIR/001_init_db.sql"
+psql -U "$DB_USER" -d "$DB_NAME" -f "$MIGRATIONS_DIR/002_add_enum_user_status.sql"
+psql -U "$DB_USER" -d "$DB_NAME" -f "$MIGRATIONS_DIR/003_seed_data.sql"
+psql -U "$DB_USER" -d "$DB_NAME" -f "$MIGRATIONS_DIR/004_add_imported_at_to_decisions.sql"
 
 echo "✅ Database '$DB_NAME' has been initialized successfully."

@@ -1,4 +1,4 @@
-// middlewares/adminOnly.js
+// backend/middlewares/adminOnly.js
 const ApiError = require('../utils/apiError');
 
 const adminOnly = (req, res, next) => {
