@@ -1,5 +1,5 @@
-.env
-/uploads/*
+backend/.env
+backend/uploads/*
 !/uploads/.gitkeep
-/node_modules/
-createUser.js
+backend/node_modules/
+backend/createUser.js

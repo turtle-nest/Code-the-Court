@@ -1,0 +1,41 @@
+{
+  "name": "code-the-court",
+  "version": "1.0.0",
+  "description": "Portfolio project",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --detectOpenHandles",
+    "test:api": "newman run tests/postman/Code-the-Court.postman_collection.json",
+    "db:init": "psql -U postgres -d code_the_court -f migrations/001_init_db.sql",
+    "db:create": "createdb -U postgres code_the_court",
+    "db:seed": "psql -U postgres -d code_the_court -f migrations/002_seed_data.sql",
+    "db:reset": "./scripts/reset_db.sh && npm run db:seed"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/turtle-nest/Code-the-Court.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/turtle-nest/Code-the-Court/issues"
+  },
+  "homepage": "https://github.com/turtle-nest/Code-the-Court#readme",
+  "dependencies": {
+    "axios": "^1.10.0",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.1",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.16.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.1"
+  }
+}
