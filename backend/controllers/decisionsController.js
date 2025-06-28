@@ -6,31 +6,74 @@ const fs = require('fs');
 const path = require('path');
 
 // GET /api/decisions
+// backend/controllers/decisionsController.js
+
 const getAllDecisions = async (req, res, next) => {
   try {
-    const { date, juridiction, type_affaire } = req.query;
+    const { date, juridiction, type_affaire, keyword, start_date, end_date } = req.query;
 
-    let query = 'SELECT * FROM decisions';
-    const filters = [];
+    let query = `
+      SELECT 
+        d.id, 
+        d.external_id,
+        d.title,
+        d.content,
+        d.date,
+        d.jurisdiction,
+        d.case_type,
+        d.source,
+        d.public,
+        ARRAY_REMOVE(ARRAY_AGG(t.label), NULL) AS tags
+      FROM decisions d
+      LEFT JOIN decision_tags dt ON dt.decision_id = d.id
+      LEFT JOIN tags t ON t.id = dt.tag_id
+      WHERE 1=1
+    `;
+
     const values = [];
 
     if (date) {
-      filters.push(`date = $${values.length + 1}`);
       values.push(date);
-    }
-    if (juridiction) {
-      filters.push(`jurisdiction = $${values.length + 1}`);
-      values.push(juridiction);
-    }
-    if (type_affaire) {
-      filters.push(`case_type = $${values.length + 1}`);
-      values.push(type_affaire);
+      query += ` AND d.date = $${values.length}`;
     }
 
-    if (filters.length > 0) {
-      query += ' WHERE ' + filters.join(' AND ');
+    if (start_date) {
+      values.push(start_date);
+      query += ` AND d.date >= $${values.length}`;
     }
-    query += ' ORDER BY date DESC LIMIT 20';
+
+    if (end_date) {
+      values.push(end_date);
+      query += ` AND d.date <= $${values.length}`;
+    }
+
+    if (juridiction) {
+      values.push(`%${juridiction}%`);
+      query += ` AND d.jurisdiction ILIKE $${values.length}`;
+    }
+
+    if (type_affaire) {
+      values.push(`%${type_affaire}%`);
+      query += ` AND d.case_type ILIKE $${values.length}`;
+    }
+
+    if (keyword) {
+      values.push(`%${keyword}%`);
+      query += `
+        AND EXISTS (
+          SELECT 1 FROM decision_tags dt2
+          JOIN tags t2 ON t2.id = dt2.tag_id
+          WHERE dt2.decision_id = d.id
+          AND t2.label ILIKE $${values.length}
+        )
+      `;
+    }
+
+    query += `
+      GROUP BY d.id
+      ORDER BY d.date DESC
+      LIMIT 50;
+    `;
 
     const result = await db.query(query, values);
     res.status(200).json(result.rows);

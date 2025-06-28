@@ -11,12 +11,12 @@ export default function SearchForm({ onSearch }) {
   const [types, setTypes] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/juridictions')
+    fetch('http://localhost:3000/api/decisions/juridictions')
       .then(res => res.json())
       .then(setJuridictions)
       .catch(() => setJuridictions([]));
 
-    fetch('http://localhost:3000/api/types')
+    fetch('http://localhost:3000/api/decisions/case-types')
       .then(res => res.json())
       .then(setTypes)
       .catch(() => setTypes([]));
@@ -47,7 +47,7 @@ export default function SearchForm({ onSearch }) {
         >
           <option value="">-- Juridiction --</option>
           {juridictions.map(j => (
-            <option key={j.id} value={j.name}>{j.name}</option>
+            <option key={j} value={j}>{j}</option>
           ))}
         </select>
 
@@ -58,7 +58,7 @@ export default function SearchForm({ onSearch }) {
         >
           <option value="">-- Type d'affaire --</option>
           {types.map(t => (
-            <option key={t.id} value={t.label}>{t.label}</option>
+            <option key={t} value={t}>{t}</option>
           ))}
         </select>
 
