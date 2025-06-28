@@ -7,6 +7,7 @@ const fs = require('fs');
 const db = require('../config/db');
 const { getAllDecisions } = require('../controllers/decisionsController');
 const { importDecisionsFromJudilibre } = require('../controllers/decisionsController');
+const { getJurisdictions, getCaseTypes } = require('../controllers/decisionsController');
 const ApiError = require('../utils/apiError');
 
 router.get('/', getAllDecisions);
@@ -40,5 +41,8 @@ router.get('/stats', authMiddleware, async (req, res) => {
   `);
   res.json(rows[0]);
 });
+
+router.get('/juridictions', getJurisdictions);
+router.get('/case-types', getCaseTypes);
 
 module.exports = router;

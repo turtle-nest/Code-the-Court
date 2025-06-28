@@ -45,9 +45,9 @@
                   "const jsonData = pm.response.json();",
                   "if (jsonData.token) {",
                   "    pm.collectionVariables.set(\"token\", jsonData.token);",
-                  "    console.log(\"\u2705 Token set:\", jsonData.token);",
+                  "    console.log(\"✅ Token set:\", jsonData.token);",
                   "} else {",
-                  "    console.warn(\"\u274c Token not found in response\");",
+                  "    console.warn(\"❌ Token not found in response\");",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -88,7 +88,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Affaire Martin contre Soci\\u00e9t\\u00e9 ABC\",\n  \"user_id\": 1,\n  \"file\": \"doc1.pdf\",\n  \"jurisdiction\": \"Cour d'appel\",\n  \"case_type\": \"Civil\",\n  \"summary\": \"Litige civil concernant un contrat commercial\",\n  \"date\": \"2024-01-15\"\n}"
+              "raw": "{\n  \"title\": \"Affaire Martin contre Société ABC\",\n  \"user_id\": 1,\n  \"file\": \"doc1.pdf\",\n  \"jurisdiction\": \"Cour d'appel\",\n  \"case_type\": \"Civil\",\n  \"summary\": \"Litige civil concernant un contrat commercial\",\n  \"date\": \"2024-01-15\"\n}"
             }
           },
           "response": []
@@ -138,6 +138,58 @@
               "path": [
                 "api",
                 "decisions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/decisions/juridictions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/decisions/juridictions",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "decisions",
+                "juridictions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/decisions/case-types",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/decisions/case-types",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "decisions",
+                "case-types"
               ]
             }
           },

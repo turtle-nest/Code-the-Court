@@ -67,7 +67,37 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
   }
 };
 
+// GET /api/decisions/juridictions
+const getJurisdictions = async (req, res, next) => {
+  try {
+    const result = await db.query(
+      'SELECT DISTINCT jurisdiction FROM decisions ORDER BY jurisdiction;'
+    );
+    const jurisdictions = result.rows.map(row => row.jurisdiction);
+    res.status(200).json(jurisdictions);
+  } catch (error) {
+    console.error('❌ Error fetching jurisdictions:', error);
+    next(new ApiError('Failed to fetch jurisdictions', 500));
+  }
+};
+
+// GET /api/decisions/case-types
+const getCaseTypes = async (req, res, next) => {
+  try {
+    const result = await db.query(
+      'SELECT DISTINCT case_type FROM decisions ORDER BY case_type;'
+    );
+    const caseTypes = result.rows.map(row => row.case_type);
+    res.status(200).json(caseTypes);
+  } catch (error) {
+    console.error('❌ Error fetching case types:', error);
+    next(new ApiError('Failed to fetch case types', 500));
+  }
+};
+
 module.exports = {
   getAllDecisions,
   importDecisionsFromJudilibre,
+  getJurisdictions,
+  getCaseTypes,
 };
