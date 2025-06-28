@@ -67,6 +67,19 @@ const getAllDecisions = async (req, res, next) => {
       `;
     }
 
+    // ✅ Nouveau : filtre par source (multi)
+    if (req.query.source) {
+      if (Array.isArray(req.query.source)) {
+        const sources = req.query.source;
+        const placeholders = sources.map((_, i) => `$${values.length + i + 1}`).join(', ');
+        values.push(...sources);
+        query += ` AND d.source IN (${placeholders})`;
+      } else {
+        values.push(req.query.source);
+        query += ` AND d.source = $${values.length}`;
+      }
+    }
+
     query += `
       GROUP BY d.id
       ORDER BY d.date DESC

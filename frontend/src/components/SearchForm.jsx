@@ -11,6 +11,9 @@ export default function SearchForm({ onSearch }) {
   const [typeAffaire, setTypeAffaire] = useState(searchParams.get('type_affaire') || '');
   const [keyword, setKeyword] = useState(searchParams.get('keywords') || '');
 
+  // ✅ Nouveau : gestion du filtre source (array de valeurs)
+  const [source, setSource] = useState(searchParams.getAll('source') || []);
+
   const [juridictions, setJuridictions] = useState([]);
   const [types, setTypes] = useState([]);
 
@@ -26,15 +29,31 @@ export default function SearchForm({ onSearch }) {
       .catch(() => setTypes([]));
   }, []);
 
+  const handleSourceChange = (e) => {
+    const { value, checked } = e.target;
+    if (checked) {
+      setSource(prev => [...prev, value]);
+    } else {
+      setSource(prev => prev.filter(v => v !== value));
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSearch({
+    const filters = {
       startDate: dateStart,
       endDate: dateEnd,
       juridiction,
       type_affaire: typeAffaire,
-      keywords: keyword
-    });
+      keywords: keyword,
+    };
+
+    // ✅ Ajoute le filtre source seulement si au moins un est coché
+    if (source.length > 0) {
+      filters.source = source;
+    }
+
+    onSearch(filters);
   };
 
   return (
@@ -88,6 +107,28 @@ export default function SearchForm({ onSearch }) {
           onChange={e => setDateEnd(e.target.value)}
           className="border px-3 py-2 rounded"
         />
+      </div>
+
+      {/* ✅ Bloc filtres source */}
+      <div className="flex gap-4 items-center">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            value="judilibre"
+            checked={source.includes('judilibre')}
+            onChange={handleSourceChange}
+          />
+          Judilibre
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            value="archive"
+            checked={source.includes('archive')}
+            onChange={handleSourceChange}
+          />
+          Archive
+        </label>
       </div>
 
       <button
