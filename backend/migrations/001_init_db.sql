@@ -1,17 +1,30 @@
--- Enable extension for UUID generation (required!)
+-- Enable extension for UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Safe ENUM creation
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_status') THEN
+    CREATE TYPE user_status AS ENUM ('pending', 'approved', 'rejected');
+  END IF;
+END
+$$;
+
+-- ======================
 -- USERS
+-- ======================
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  role VARCHAR NOT NULL DEFAULT 'guest',           -- ENUM-like behavior: 'guest', 'user', 'admin'
-  status VARCHAR NOT NULL DEFAULT 'pending',       -- 'pending', 'approved'
+  role VARCHAR NOT NULL DEFAULT 'guest', -- ENUM-like: 'guest', 'user', 'admin'
+  status user_status NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- ======================
 -- DECISIONS
+-- ======================
 CREATE TABLE IF NOT EXISTS decisions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   external_id VARCHAR UNIQUE,
@@ -21,13 +34,16 @@ CREATE TABLE IF NOT EXISTS decisions (
   jurisdiction VARCHAR,
   case_type VARCHAR,
   source VARCHAR NOT NULL DEFAULT 'judilibre',
-  public BOOLEAN DEFAULT TRUE
+  public BOOLEAN DEFAULT TRUE,
+  imported_at TIMESTAMP NOT NULL DEFAULT NOW() -- ✅ Inclure ici pour éviter ALTER plus tard
 );
 
-CREATE INDEX decisions_index_0 ON decisions (date);
-CREATE INDEX decisions_index_1 ON decisions (jurisdiction);
+CREATE INDEX IF NOT EXISTS decisions_index_0 ON decisions (date);
+CREATE INDEX IF NOT EXISTS decisions_index_1 ON decisions (jurisdiction);
 
+-- ======================
 -- ARCHIVES
+-- ======================
 CREATE TABLE IF NOT EXISTS archives (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
@@ -37,13 +53,16 @@ CREATE TABLE IF NOT EXISTS archives (
   location VARCHAR,
   user_id UUID NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  file_path TEXT, -- ✅ Déjà présent
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE INDEX archives_index_0 ON archives (user_id);
-CREATE INDEX archives_index_1 ON archives (jurisdiction);
+CREATE INDEX IF NOT EXISTS archives_index_0 ON archives (user_id);
+CREATE INDEX IF NOT EXISTS archives_index_1 ON archives (jurisdiction);
 
+-- ======================
 -- NOTES
+-- ======================
 CREATE TABLE IF NOT EXISTS notes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
@@ -54,15 +73,19 @@ CREATE TABLE IF NOT EXISTS notes (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- ======================
 -- TAGS
+-- ======================
 CREATE TABLE IF NOT EXISTS tags (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   label VARCHAR NOT NULL UNIQUE
 );
 
-CREATE UNIQUE INDEX tags_index_0 ON tags (label);
+CREATE UNIQUE INDEX IF NOT EXISTS tags_index_0 ON tags (label);
 
--- DECISION_TAGS (many-to-many)
+-- ======================
+-- DECISION_TAGS
+-- ======================
 CREATE TABLE IF NOT EXISTS decision_tags (
   decision_id UUID NOT NULL,
   tag_id UUID NOT NULL,
@@ -71,6 +94,3 @@ CREATE TABLE IF NOT EXISTS decision_tags (
   FOREIGN KEY (decision_id) REFERENCES decisions(id),
   FOREIGN KEY (tag_id) REFERENCES tags(id)
 );
-
--- ADD FILE_PATH IN ARCHIVES TABLE
-ALTER TABLE archives ADD COLUMN file_path TEXT;

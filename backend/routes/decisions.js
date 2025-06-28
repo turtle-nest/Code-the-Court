@@ -1,3 +1,4 @@
+// backend/routes/decisions.js
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middlewares/authMiddleware');
@@ -7,6 +8,7 @@ const ApiError = require('../utils/apiError');
 
 const {
   getAllDecisions,
+  getDecisionById,
   importDecisionsFromJudilibre,
   getJurisdictions,
   getCaseTypes,
@@ -40,5 +42,6 @@ router.get('/import/mock', (req, res, next) => {
 router.get('/stats', authMiddleware, getDecisionsStats);
 router.get('/juridictions', getJurisdictions);
 router.get('/case-types', getCaseTypes);
+router.get('/:id', getDecisionById);
 
 module.exports = router;

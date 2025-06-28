@@ -1,12 +1,16 @@
 // src/components/SearchForm.jsx
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 export default function SearchForm({ onSearch }) {
-  const [dateStart, setDateStart] = useState('');
-  const [dateEnd, setDateEnd] = useState('');
-  const [juridiction, setJuridiction] = useState('');
-  const [typeAffaire, setTypeAffaire] = useState('');
-  const [keyword, setKeyword] = useState('');
+  const [searchParams] = useSearchParams();
+
+  const [dateStart, setDateStart] = useState(searchParams.get('startDate') || '');
+  const [dateEnd, setDateEnd] = useState(searchParams.get('endDate') || '');
+  const [juridiction, setJuridiction] = useState(searchParams.get('juridiction') || '');
+  const [typeAffaire, setTypeAffaire] = useState(searchParams.get('type_affaire') || '');
+  const [keyword, setKeyword] = useState(searchParams.get('keywords') || '');
+
   const [juridictions, setJuridictions] = useState([]);
   const [types, setTypes] = useState([]);
 

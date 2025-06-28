@@ -1,25 +1,27 @@
 // src/pages/SearchPage.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import SearchForm from '../components/SearchForm';
 
 const SearchPage = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
 
-  const handleSearch = async (filters) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation(); // ✅ Pour récupérer l'URL actuelle
+
+  // ✅ Fonction pour exécuter la recherche
+  const fetchResults = async (filters) => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams(filters);
       const res = await fetch(`http://localhost:3000/api/decisions?${params.toString()}`);
-
       if (!res.ok) {
         throw new Error(`Erreur API: ${res.status}`);
       }
-
       const data = await res.json();
       setResults(data);
     } catch (err) {
@@ -30,6 +32,22 @@ const SearchPage = () => {
       setLoading(false);
     }
   };
+
+  // ✅ Appelé par le formulaire
+  const handleSearch = (filters) => {
+    setSearchParams(filters);
+    fetchResults(filters);
+  };
+
+  // ✅ Relance la recherche quand l’URL change
+  useEffect(() => {
+    const params = Object.fromEntries([...searchParams]);
+    if (Object.keys(params).length > 0) {
+      fetchResults(params);
+    } else {
+      setResults([]);
+    }
+  }, [searchParams]);
 
   return (
     <div className="flex h-screen">
@@ -71,7 +89,7 @@ const SearchPage = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate(`/decision/${r.id}`)}
+                  onClick={() => navigate(`/decision/${r.id}${location.search}`)}
                   className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                 >
                   Voir détails

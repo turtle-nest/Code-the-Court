@@ -6,8 +6,6 @@ const fs = require('fs');
 const path = require('path');
 
 // GET /api/decisions
-// backend/controllers/decisionsController.js
-
 const getAllDecisions = async (req, res, next) => {
   try {
     const { date, juridiction, type_affaire, keyword, start_date, end_date } = req.query;
@@ -106,7 +104,6 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
 // GET /api/decisions/stats
 const getDecisionsStats = async (req, res, next) => {
   try {
-    // 1️⃣ Total des décisions (avec source si tu veux)
     const { rows: totalRows } = await db.query(`
       SELECT 
         COUNT(*) FILTER (WHERE source = 'judilibre')::int AS judilibre,
@@ -115,22 +112,21 @@ const getDecisionsStats = async (req, res, next) => {
       FROM decisions
     `);
 
-    // 2️⃣ Dernier import (nombre + date)
     const { rows: lastImportRows } = await db.query(`
       SELECT 
         COUNT(*)::int AS count,
         MAX(date)::date AS date
       FROM decisions
-      WHERE imported_at = (
-        SELECT MAX(imported_at) FROM decisions
+      WHERE imported_at IS NOT NULL AND imported_at = (
+        SELECT MAX(imported_at) FROM decisions WHERE imported_at IS NOT NULL
       )
     `);
 
     const stats = {
-      total: totalRows[0].total,
+      total: totalRows[0]?.total || 0,
       lastImport: {
-        count: lastImportRows[0].count,
-        date: lastImportRows[0].date || null
+        count: lastImportRows[0]?.count || 0,
+        date: lastImportRows[0]?.date || null
       }
     };
 
@@ -169,12 +165,48 @@ const getCaseTypes = async (req, res, next) => {
   }
 };
 
+// GET /api/decisions/:id
+const getDecisionById = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const { rows } = await db.query(
+      `
+      SELECT 
+        d.id, 
+        d.title,
+        d.content,
+        d.date,
+        d.jurisdiction,
+        d.case_type,
+        d.source,
+        d.public,
+        ARRAY_REMOVE(ARRAY_AGG(t.label), NULL) AS keywords
+      FROM decisions d
+      LEFT JOIN decision_tags dt ON dt.decision_id = d.id
+      LEFT JOIN tags t ON t.id = dt.tag_id
+      WHERE d.id = $1
+      GROUP BY d.id;
+      `,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Decision not found' });
+    }
+
+    res.status(200).json(rows[0]);
+  } catch (err) {
+    console.error('❌ Error fetching decision by id:', err);
+    next(new ApiError('Failed to fetch decision', 500));
+  }
+};
+
 // ✅ EXPORT
 module.exports = {
   getAllDecisions,
+  getDecisionById,
   importDecisionsFromJudilibre,
   getDecisionsStats,
   getJurisdictions,
   getCaseTypes,
 };
-

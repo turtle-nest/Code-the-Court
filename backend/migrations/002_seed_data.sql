@@ -1,8 +1,9 @@
--- Insert test users
+-- Insert test users (safe)
 INSERT INTO users (id, email, password_hash, role, status)
 VALUES
   (gen_random_uuid(), 'admin@example.com', crypt('Admin1234!', gen_salt('bf')), 'admin', 'approved'),
-  (gen_random_uuid(), 'user@example.com', crypt('User1234!', gen_salt('bf')), 'guest', 'pending');
+  (gen_random_uuid(), 'user@example.com', crypt('User1234!', gen_salt('bf')), 'guest', 'pending')
+ON CONFLICT (email) DO NOTHING;
 
 -- Insert test decisions
 INSERT INTO decisions (external_id, title, content, date, jurisdiction, source)
