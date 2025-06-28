@@ -18,8 +18,8 @@ export async function apiFetch(url, options = {}) {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      // Déconnexion automatique si token expiré ou interdit
-      if (res.status === 401 || res.status === 403) {
+      // ✅ Ne déconnecte que si ce n’est PAS un compte pending
+      if ((res.status === 401 || res.status === 403) && data.message !== 'pending') {
         console.warn('[🔒] Session expirée ou accès refusé. Déconnexion.');
         localStorage.removeItem('token');
         localStorage.removeItem('userEmail');

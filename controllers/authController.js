@@ -21,7 +21,7 @@ const login = async (req, res, next) => {
 
     // 🔒 Status Check
     if (user.status !== 'approved') {
-      return res.status(401).json({ message: 'pending' });
+      return res.status(403).json({ message: 'pending' });
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
