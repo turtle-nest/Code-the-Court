@@ -3,3 +3,4 @@ backend/uploads/*
 !/uploads/.gitkeep
 backend/node_modules/
 backend/createUser.js
+.DS_Store
