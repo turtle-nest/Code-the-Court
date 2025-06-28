@@ -5,16 +5,31 @@ import { useParams } from 'react-router-dom';
 const DecisionDetailPage = () => {
   const { id } = useParams();
   const [decision, setDecision] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [keywords, setKeywords] = useState([]);
   const [newKeyword, setNewKeyword] = useState('');
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
     const fetchDecision = async () => {
-      const res = await fetch(`http://localhost:3000/api/decisions/${id}`);
-      const data = await res.json();
-      setDecision(data);
-      setKeywords(data.keywords || []);
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`http://localhost:3000/api/decisions/${id}`);
+        if (!res.ok) {
+          throw new Error(`Erreur API: ${res.status}`);
+        }
+        const data = await res.json();
+        setDecision(data);
+        setKeywords(data.keywords || []);
+      } catch (err) {
+        console.error('[❌] Fetch decision error:', err);
+        setError('❌ Erreur lors du chargement de la décision.');
+      } finally {
+        setLoading(false);
+      }
     };
     fetchDecision();
   }, [id]);
@@ -43,7 +58,8 @@ const DecisionDetailPage = () => {
     }
   };
 
-  if (!decision) return <div>Chargement...</div>;
+  if (loading) return <div className="p-8 italic">⏳ Chargement en cours...</div>;
+  if (error) return <div className="p-8 text-red-600 font-semibold">{error}</div>;
 
   return (
     <div className="flex h-screen">

@@ -3,7 +3,7 @@ import React from 'react';
 
 const ArchiveList = ({ archives }) => {
   if (archives.length === 0) {
-    return <p>Aucune archive disponible.</p>;
+    return <p className="italic text-gray-500">Aucune archive disponible.</p>;
   }
 
   return (

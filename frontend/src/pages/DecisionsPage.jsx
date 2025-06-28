@@ -1,4 +1,4 @@
-// src/pages/DecisionsPage.jsx
+// src/pages/DecisionPage.jsx
 import React, { useState } from 'react';
 import { importFromJudilibre } from '../services/decisions';
 
@@ -9,7 +9,10 @@ function DecisionsPage() {
     startDate: '',
     endDate: '',
   });
+
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -18,17 +21,17 @@ function DecisionsPage() {
 
   const handleSubmit = async e => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
     try {
       const result = await importFromJudilibre(formData);
-      setMessage({
-        type: 'success',
-        text: `${result.count} décisions importées le ${result.timestamp}`,
-      });
+      setMessage(`${result.count} décisions importées le ${result.timestamp}`);
     } catch (err) {
-      setMessage({
-        type: 'error',
-        text: `Une erreur est survenue : ${err.message}`,
-      });
+      console.error('[❌] Import error:', err);
+      setError(`Une erreur est survenue : ${err.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,16 +99,19 @@ function DecisionsPage() {
 
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            disabled={loading}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            Lancer l’import
+            {loading ? 'Import en cours...' : 'Lancer l’import'}
           </button>
         </form>
 
+        {error && (
+          <p className="mt-4 font-semibold text-red-600">{error}</p>
+        )}
+
         {message && (
-          <div className={`mt-4 font-semibold ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-            {message.text}
-          </div>
+          <p className="mt-4 font-semibold text-green-600">{message}</p>
         )}
       </div>
     </div>

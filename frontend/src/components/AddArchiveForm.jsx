@@ -11,6 +11,7 @@ const AddArchiveForm = () => {
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState(null);
   const [isError, setIsError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const maxSize = 5 * 1024 * 1024; // 5MB
 
@@ -32,11 +33,16 @@ const AddArchiveForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!file || !title || !date || !jurisdiction || !caseType) {
       setMessage('❌ Tous les champs sont requis');
       setIsError(true);
       return;
     }
+
+    setLoading(true);
+    setMessage(null);
+    setIsError(false);
 
     const formData = new FormData();
     formData.append('title', title);
@@ -61,8 +67,11 @@ const AddArchiveForm = () => {
       setCaseType('');
       setFile(null);
     } catch (err) {
+      console.error('[❌] Upload error:', err);
       setMessage('❌ Une erreur est survenue');
       setIsError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,7 +81,7 @@ const AddArchiveForm = () => {
       className="space-y-4 bg-white shadow rounded-lg p-6"
     >
       <h2 className="text-lg font-semibold mb-4">
-        Ajouter un fichier au format pdf :
+        Ajouter un fichier au format PDF :
       </h2>
 
       <input
@@ -136,9 +145,10 @@ const AddArchiveForm = () => {
 
       <button
         type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        disabled={loading}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
       >
-        Enregistrer la décision
+        {loading ? 'Enregistrement...' : 'Enregistrer la décision'}
       </button>
 
       {message && (

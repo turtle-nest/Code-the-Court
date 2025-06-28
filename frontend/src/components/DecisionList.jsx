@@ -1,7 +1,7 @@
 // src/components/DecisionList.jsx
 export default function DecisionList({ decisions }) {
   if (!decisions.length) {
-    return <div>No decisions found.</div>;
+    return <div className="italic text-gray-500">Aucune décision trouvée.</div>;
   }
   return (
     <ul>
