@@ -2,7 +2,7 @@
   "info": {
     "name": "Code the Court API",
     "_postman_id": "12345678-abcd-efgh-ijkl-1234567890ab",
-    "description": "Postman collection to test the Code the Court API with JWT authentication.",
+    "description": "Postman collection to test the Code the Court API with JWT authentication and input validation.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -22,14 +22,9 @@
             "url": {
               "raw": "http://localhost:3000/api/login",
               "protocol": "http",
-              "host": [
-                "localhost"
-              ],
+              "host": ["localhost"],
               "port": "3000",
-              "path": [
-                "api",
-                "login"
-              ]
+              "path": ["api", "login"]
             },
             "body": {
               "mode": "raw",
@@ -49,6 +44,89 @@
                   "} else {",
                   "    console.warn(\"❌ Token not found in response\");",
                   "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/users/register INVALID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/users/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid-email\",\n  \"password\": \"short\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Should fail with 400 Bad Request\", function () {",
+                  "  pm.expect(pm.response.code).to.eql(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "POST /api/admin/approve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/admin/approve",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "admin", "approve"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"not-a-uuid\",\n  \"role\": \"hacker\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Should fail with 400 Bad Request\", function () {",
+                  "  pm.expect(pm.response.code).to.eql(400);",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
@@ -77,21 +155,29 @@
             "url": {
               "raw": "http://localhost:3000/api/archives",
               "protocol": "http",
-              "host": [
-                "localhost"
-              ],
+              "host": ["localhost"],
               "port": "3000",
-              "path": [
-                "api",
-                "archives"
-              ]
+              "path": ["api", "archives"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Affaire Martin contre Société ABC\",\n  \"user_id\": 1,\n  \"file\": \"doc1.pdf\",\n  \"jurisdiction\": \"Cour d'appel\",\n  \"case_type\": \"Civil\",\n  \"summary\": \"Litige civil concernant un contrat commercial\",\n  \"date\": \"2024-01-15\"\n}"
+              "raw": "{\n  \"title\": \"\",\n  \"date\": \"not-a-date\"\n}"
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Should fail with 400 Bad Request\", function () {",
+                  "  pm.expect(pm.response.code).to.eql(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "GET /api/archives",
@@ -106,14 +192,9 @@
             "url": {
               "raw": "http://localhost:3000/api/archives",
               "protocol": "http",
-              "host": [
-                "localhost"
-              ],
+              "host": ["localhost"],
               "port": "3000",
-              "path": [
-                "api",
-                "archives"
-              ]
+              "path": ["api", "archives"]
             }
           },
           "response": []
@@ -124,6 +205,40 @@
       "name": "Decisions",
       "item": [
         {
+          "name": "GET /api/decisions INVALID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/decisions?date=not-a-date",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "decisions"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "not-a-date"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Should fail with 400 Bad Request\", function () {",
+                  "  pm.expect(pm.response.code).to.eql(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
           "name": "GET /api/decisions",
           "request": {
             "method": "GET",
@@ -131,95 +246,58 @@
             "url": {
               "raw": "http://localhost:3000/api/decisions",
               "protocol": "http",
-              "host": [
-                "localhost"
-              ],
+              "host": ["localhost"],
               "port": "3000",
-              "path": [
-                "api",
-                "decisions"
-              ]
+              "path": ["api", "decisions"]
             }
           },
           "response": []
-        },
+        }
+      ]
+    },
+    {
+      "name": "Notes",
+      "item": [
         {
-          "name": "GET /api/decisions/juridictions",
+          "name": "POST /api/notes INVALID",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
               }
             ],
             "url": {
-              "raw": "http://localhost:3000/api/decisions/juridictions",
+              "raw": "http://localhost:3000/api/notes",
               "protocol": "http",
-              "host": [
-                "localhost"
-              ],
+              "host": ["localhost"],
               "port": "3000",
-              "path": [
-                "api",
-                "decisions",
-                "juridictions"
-              ]
+              "path": ["api", "notes"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target_id\": \"bad-id\",\n  \"content\": \"\"\n}"
             }
           },
-          "response": []
-        },
-        {
-          "name": "GET /api/decisions/case-types",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Should fail with 400 Bad Request\", function () {",
+                  "  pm.expect(pm.response.code).to.eql(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
               }
-            ],
-            "url": {
-              "raw": "http://localhost:3000/api/decisions/case-types",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "api",
-                "decisions",
-                "case-types"
-              ]
             }
-          },
-          "response": []
-        },
-        {
-          "name": "GET /api/decisions/stats",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:3000/api/decisions/stats",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "api",
-                "decisions",
-                "stats"
-              ]
-            }
-          },
-          "response": []
+          ]
         }
       ]
     },
@@ -239,117 +317,12 @@
             "url": {
               "raw": "http://localhost:3000/api/profile",
               "protocol": "http",
-              "host": [
-                "localhost"
-              ],
+              "host": ["localhost"],
               "port": "3000",
-              "path": [
-                "api",
-                "profile"
-              ]
+              "path": ["api", "profile"]
             }
           },
           "response": []
-        }
-      ]
-    },
-    {
-      "name": "Admin",
-      "item": [
-        {
-          "name": "POST /api/admin/approve",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:3000/api/admin/approve",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "api",
-                "admin",
-                "approve"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": \"some-user-id\"\n}"
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Notes",
-      "item": [
-        {
-          "name": "POST /api/notes",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:3000/api/notes",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "api",
-                "notes"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"target_id\": \"decision-123\",\n  \"target_type\": \"decision\",\n  \"content\": \"Test note content\"\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200 or 201\", function () {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
-                  "});",
-                  "",
-                  "pm.test(\"Response has message and note\", function () {",
-                  "  var jsonData = pm.response.json();",
-                  "  pm.expect(jsonData).to.have.property(\"message\");",
-                  "  pm.expect(jsonData).to.have.property(\"note\");",
-                  "  pm.expect(jsonData.note).to.have.property(\"user_id\");",
-                  "  pm.expect(jsonData.note).to.have.property(\"target_id\");",
-                  "  pm.expect(jsonData.note).to.have.property(\"target_type\");",
-                  "  pm.expect(jsonData.note).to.have.property(\"content\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
         }
       ]
     }

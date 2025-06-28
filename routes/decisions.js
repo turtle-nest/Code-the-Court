@@ -13,7 +13,9 @@ const {
   getDecisionsStats
 } = require('../controllers/decisionsController');
 
-router.get('/', getAllDecisions);
+const { validateDecisionsQuery } = require('../middlewares/validateInput');
+
+router.get('/', validateDecisionsQuery, getAllDecisions);
 router.get('/import', importDecisionsFromJudilibre);
 
 // MOCK route

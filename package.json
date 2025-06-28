@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --detectOpenHandles",
+    "test:api": "newman run postman/Code-the-Court.postman_collection.json",
     "db:init": "psql -U postgres -d code_the_court -f migrations/001_init_db.sql",
     "db:create": "createdb -U postgres code_the_court",
     "db:seed": "psql -U postgres -d code_the_court -f migrations/002_seed_data.sql",
@@ -27,6 +28,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.1",
     "node-fetch": "^3.3.2",
