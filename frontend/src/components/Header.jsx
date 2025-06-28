@@ -11,7 +11,7 @@ function Header({ title }) {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('role');
-    window.location.href = '/login';
+    window.location.href = '/'; // ✅ Redirige vers tableau de bord public
   };
 
   return (

@@ -39,7 +39,7 @@ router.get('/import/mock', (req, res, next) => {
 });
 
 // Aux routes
-router.get('/stats', authMiddleware, getDecisionsStats);
+router.get('/stats', getDecisionsStats);
 router.get('/juridictions', getJurisdictions);
 router.get('/case-types', getCaseTypes);
 router.get('/:id', getDecisionById);
