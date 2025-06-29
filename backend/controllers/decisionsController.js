@@ -1,5 +1,4 @@
 // backend/controllers/decisionsController.js
-
 const db = require('../config/db');
 const ApiError = require('../utils/apiError');
 const { fetchDecisionsFromJudilibre } = require('../services/judilibreService');
@@ -111,7 +110,7 @@ const getAllDecisions = async (req, res, next) => {
         d.case_type,
         d.source,
         d.public,
-        ARRAY_REMOVE(ARRAY_AGG(t.label), NULL) AS tags
+        COALESCE(json_agg(t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
       ${baseQuery}
       GROUP BY d.id
       ORDER BY d.${sortBy} ${order.toUpperCase()}
@@ -243,7 +242,7 @@ const getDecisionById = async (req, res, next) => {
         d.case_type,
         d.source,
         d.public,
-        ARRAY_REMOVE(ARRAY_AGG(t.label), NULL) AS keywords
+        COALESCE(json_agg(t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
       FROM decisions d
       LEFT JOIN decision_tags dt ON dt.decision_id = d.id
       LEFT JOIN tags t ON t.id = dt.tag_id

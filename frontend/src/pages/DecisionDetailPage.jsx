@@ -24,6 +24,11 @@ const DecisionDetailPage = () => {
     return date.toLocaleDateString('fr-FR');
   };
 
+  const decodeHTML = (str) => {
+    const parser = new DOMParser();
+    return parser.parseFromString(`<!doctype html><body>${str}`, 'text/html').body.textContent;
+  };
+
   useEffect(() => {
     const fetchDecision = async () => {
       try {
@@ -84,18 +89,18 @@ const DecisionDetailPage = () => {
       </button>
 
       <h2 className="text-xl italic mb-4">
-        📄 {decision.jurisdiction} — <span className="text-gray-500">{formatDate(decision.date)}</span>
+        📄 {decodeHTML(decision.jurisdiction)} — <span className="text-gray-500">{formatDate(decision.date)}</span>
       </h2>
 
       <div className="border rounded p-4 mb-6 bg-white">
         <h3 className="font-bold mb-2">Métadonnées</h3>
         <p>Type d’affaire : <strong>{decision.case_type || 'N/A'}</strong></p>
-        <p>Juridiction : <strong>{decision.jurisdiction}</strong></p>
+        <p>Juridiction : <strong>{decodeHTML(decision.jurisdiction)}</strong></p>
 
         <div className="mt-2">
           <p className="font-semibold">Mots-clés :</p>
           <div className="flex flex-wrap gap-2 mt-1">
-            {decision.keywords.length > 0 ? (
+            {decision.keywords?.length > 0 ? (
               decision.keywords.map((kw, i) => (
                 <span key={i} className="bg-gray-200 px-2 py-1 rounded text-sm flex items-center">
                   {kw}
