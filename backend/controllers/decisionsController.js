@@ -14,17 +14,17 @@ const getAllDecisions = async (req, res, next) => {
   try {
     const {
       date, juridiction, type_affaire, keyword, start_date, end_date, source,
-      page = 1, limit = 20, sortBy = 'date', order = 'desc'
+      page = 1, limit = 10, sortBy = 'date', order = 'desc'
     } = req.query;
 
     const pageInt = parseInt(page);
-    const limitInt = parseInt(limit);
+    const limitInt = parseInt(limit) || 10;
 
     if (isNaN(pageInt) || pageInt < 1) {
       return next(new ApiError('Invalid page number', 400));
     }
 
-    if (isNaN(limitInt) || limitInt < 1 || limitInt > 100) {
+    if (isNaN(limitInt) || limitInt < 1 || limitInt > 10) {
       return next(new ApiError('Invalid limit', 400));
     }
 
@@ -41,7 +41,66 @@ const getAllDecisions = async (req, res, next) => {
 
     const offset = (pageInt - 1) * limitInt;
 
-    let query = `
+    let baseQuery = `
+      FROM decisions d
+      LEFT JOIN decision_tags dt ON dt.decision_id = d.id
+      LEFT JOIN tags t ON t.id = dt.tag_id
+      WHERE 1=1
+    `;
+
+    const filters = [];
+    if (date) {
+      filters.push(date);
+      baseQuery += ` AND d.date = $${filters.length}`;
+    }
+    if (start_date) {
+      filters.push(start_date);
+      baseQuery += ` AND d.date >= $${filters.length}`;
+    }
+    if (end_date) {
+      filters.push(end_date);
+      baseQuery += ` AND d.date <= $${filters.length}`;
+    }
+    if (juridiction) {
+      filters.push(`%${juridiction}%`);
+      baseQuery += ` AND d.jurisdiction ILIKE $${filters.length}`;
+    }
+    if (type_affaire) {
+      filters.push(`%${type_affaire}%`);
+      baseQuery += ` AND d.case_type ILIKE $${filters.length}`;
+    }
+    if (keyword) {
+      filters.push(`%${keyword}%`);
+      baseQuery += `
+        AND EXISTS (
+          SELECT 1 FROM decision_tags dt2
+          JOIN tags t2 ON t2.id = dt2.tag_id
+          WHERE dt2.decision_id = d.id
+          AND t2.label ILIKE $${filters.length}
+        )
+      `;
+    }
+    if (source) {
+      if (Array.isArray(source)) {
+        const placeholders = source.map((_, i) => `$${filters.length + i + 1}`).join(', ');
+        filters.push(...source);
+        baseQuery += ` AND d.source IN (${placeholders})`;
+      } else {
+        filters.push(source);
+        baseQuery += ` AND d.source = $${filters.length}`;
+      }
+    }
+
+    // ✅ Requête COUNT pour le total
+    const countQuery = `
+      SELECT COUNT(DISTINCT d.id) AS totalCount
+      ${baseQuery};
+    `;
+    const countResult = await db.query(countQuery, filters);
+    const totalCount = parseInt(countResult.rows[0].totalcount) || 0;
+
+    // ✅ Requête résultats paginés
+    const dataQuery = `
       SELECT 
         d.id, 
         d.external_id,
@@ -53,72 +112,20 @@ const getAllDecisions = async (req, res, next) => {
         d.source,
         d.public,
         ARRAY_REMOVE(ARRAY_AGG(t.label), NULL) AS tags
-      FROM decisions d
-      LEFT JOIN decision_tags dt ON dt.decision_id = d.id
-      LEFT JOIN tags t ON t.id = dt.tag_id
-      WHERE 1=1
-    `;
-
-    const values = [];
-
-    if (date) {
-      values.push(date);
-      query += ` AND d.date = $${values.length}`;
-    }
-
-    if (start_date) {
-      values.push(start_date);
-      query += ` AND d.date >= $${values.length}`;
-    }
-
-    if (end_date) {
-      values.push(end_date);
-      query += ` AND d.date <= $${values.length}`;
-    }
-
-    if (juridiction) {
-      values.push(`%${juridiction}%`);
-      query += ` AND d.jurisdiction ILIKE $${values.length}`;
-    }
-
-    if (type_affaire) {
-      values.push(`%${type_affaire}%`);
-      query += ` AND d.case_type ILIKE $${values.length}`;
-    }
-
-    if (keyword) {
-      values.push(`%${keyword}%`);
-      query += `
-        AND EXISTS (
-          SELECT 1 FROM decision_tags dt2
-          JOIN tags t2 ON t2.id = dt2.tag_id
-          WHERE dt2.decision_id = d.id
-          AND t2.label ILIKE $${values.length}
-        )
-      `;
-    }
-
-    if (source) {
-      if (Array.isArray(source)) {
-        const placeholders = source.map((_, i) => `$${values.length + i + 1}`).join(', ');
-        values.push(...source);
-        query += ` AND d.source IN (${placeholders})`;
-      } else {
-        values.push(source);
-        query += ` AND d.source = $${values.length}`;
-      }
-    }
-
-    query += `
+      ${baseQuery}
       GROUP BY d.id
       ORDER BY d.${sortBy} ${order.toUpperCase()}
-      LIMIT $${values.length + 1} OFFSET $${values.length + 2};
+      LIMIT $${filters.length + 1} OFFSET $${filters.length + 2};
     `;
 
-    values.push(limitInt, offset);
+    const dataValues = [...filters, limitInt, offset];
+    const result = await db.query(dataQuery, dataValues);
 
-    const result = await db.query(query, values);
-    res.status(200).json(result.rows);
+    res.status(200).json({
+      results: result.rows,
+      totalCount
+    });
+
   } catch (error) {
     console.error('❌ Error fetching decisions:', error);
     next(new ApiError('Internal server error', 500));
@@ -127,7 +134,6 @@ const getAllDecisions = async (req, res, next) => {
 
 /**
  * GET /api/decisions/import
- * Importe des décisions depuis l'API Judilibre ou un mock local
  */
 const importDecisionsFromJudilibre = async (req, res, next) => {
   try {
@@ -258,7 +264,7 @@ const getDecisionById = async (req, res, next) => {
   }
 };
 
-// ✅ EXPORT complet et propre
+// ✅ EXPORT
 module.exports = {
   getAllDecisions,
   getDecisionById,

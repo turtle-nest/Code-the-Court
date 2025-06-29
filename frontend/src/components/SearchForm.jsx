@@ -46,6 +46,8 @@ export default function SearchForm({ onSearch }) {
       juridiction,
       type_affaire: typeAffaire,
       keywords: keyword,
+      page: 1,         // ✅ pagination démarre toujours à 1
+      limit: 10        // ✅ toujours limité à 10 résultats max
     };
 
     // ✅ Ajoute le filtre source seulement si au moins un est coché
