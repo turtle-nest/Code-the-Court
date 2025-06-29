@@ -20,6 +20,11 @@ const SearchPage = () => {
     return date.toLocaleDateString('fr-FR');
   };
 
+  const decodeHTML = (str) => {
+    const parser = new DOMParser();
+    return parser.parseFromString(`<!doctype html><body>${str}`, 'text/html').body.textContent;
+  };
+
   const fetchResults = async (filters) => {
     setLoading(true);
     setError(null);
@@ -105,7 +110,7 @@ const SearchPage = () => {
                 >
                   <div>
                     <p className="font-semibold text-gray-800">
-                      📄 {r.city || r.jurisdiction} – <span className="text-gray-500 text-sm">{formatDate(r.date)}</span>
+                      📄 {decodeHTML(r.city || r.jurisdiction)} – <span className="text-gray-500 text-sm">{formatDate(r.date)}</span>
                     </p>
                     <p className="italic text-blue-800 text-sm mt-1">
                       Type d’affaire : {r.case_type || 'N/A'}

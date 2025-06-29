@@ -234,7 +234,7 @@ const getDecisionById = async (req, res, next) => {
     const { rows } = await db.query(
       `
       SELECT 
-        d.id, 
+        d.id,
         d.title,
         d.content,
         d.date,
@@ -242,7 +242,7 @@ const getDecisionById = async (req, res, next) => {
         d.case_type,
         d.source,
         d.public,
-        COALESCE(json_agg(t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
+        COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
       FROM decisions d
       LEFT JOIN decision_tags dt ON dt.decision_id = d.id
       LEFT JOIN tags t ON t.id = dt.tag_id
