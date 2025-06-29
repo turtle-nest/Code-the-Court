@@ -1,3 +1,5 @@
+// backend/controllers/archivesController.js
+
 const db = require('../config/db');
 const ApiError = require('../utils/apiError');
 
@@ -6,19 +8,38 @@ const createArchive = async (req, res, next) => {
   const user_id = req.user.id;
   const file = req.file;
 
+  // ✅ Vérification basique
   if (!title || !user_id || !file) {
     return next(new ApiError('title, user_id, and file are required', 400));
   }
 
   try {
-    const result = await db.query(
-      `INSERT INTO archives (title, content, date, jurisdiction, location, user_id, file_path)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id`,
+    // 📂 1️⃣ Insert dans ARCHIVES
+    const archiveResult = await db.query(
+      `
+      INSERT INTO archives (title, content, date, jurisdiction, location, user_id, file_path)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *;
+      `,
       [title, content, date, jurisdiction, location, user_id, file.path]
     );
 
-    res.status(201).json({ archive_id: result.rows[0].id });
+    const archive = archiveResult.rows[0];
+
+    // 📄 2️⃣ Insert aussi dans DECISIONS (source = 'archive')
+    await db.query(
+      `
+      INSERT INTO decisions (title, content, date, jurisdiction, source)
+      VALUES ($1, $2, $3, $4, 'archive');
+      `,
+      [archive.title, archive.content, archive.date, archive.jurisdiction]
+    );
+
+    res.status(201).json({
+      message: '✅ Archive créée et ajoutée aux décisions.',
+      archive_id: archive.id
+    });
+
   } catch (error) {
     console.error('❌ Error creating archive:', error);
     next(new ApiError('Internal server error', 500));
