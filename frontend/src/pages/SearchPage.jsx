@@ -1,4 +1,3 @@
-// src/pages/SearchPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import SearchForm from '../components/SearchForm';
@@ -7,12 +6,12 @@ const SearchPage = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation(); // ✅ Pour récupérer l'URL actuelle
+  const location = useLocation();
 
-  // ✅ Fonction pour exécuter la recherche
   const fetchResults = async (filters) => {
     setLoading(true);
     setError(null);
@@ -24,6 +23,7 @@ const SearchPage = () => {
       }
       const data = await res.json();
       setResults(data);
+      setSuccessMessage(`✅ Nombre de décisions trouvées : ${data.length}`);
     } catch (err) {
       console.error('[❌] Search error:', err);
       setResults([]);
@@ -33,21 +33,27 @@ const SearchPage = () => {
     }
   };
 
-  // ✅ Appelé par le formulaire
   const handleSearch = (filters) => {
     setSearchParams(filters);
     fetchResults(filters);
   };
 
-  // ✅ Relance la recherche quand l’URL change
   useEffect(() => {
     const params = Object.fromEntries([...searchParams]);
     if (Object.keys(params).length > 0) {
       fetchResults(params);
     } else {
       setResults([]);
+      setSuccessMessage('');
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   return (
     <div className="flex h-screen">
@@ -60,6 +66,10 @@ const SearchPage = () => {
 
         {error && (
           <p className="mt-4 font-semibold text-red-600">{error}</p>
+        )}
+
+        {successMessage && !loading && !error && (
+          <p className="mt-4 font-semibold text-green-600">{successMessage}</p>
         )}
 
         {!loading && !error && results.length === 0 && (

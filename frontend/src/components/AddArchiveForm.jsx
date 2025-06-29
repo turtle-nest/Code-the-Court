@@ -1,5 +1,5 @@
 // src/components/AddArchiveForm.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { apiFetch } from '../utils/apiFetch';
 
@@ -77,6 +77,13 @@ const AddArchiveForm = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   return (
     <form

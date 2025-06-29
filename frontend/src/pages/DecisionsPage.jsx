@@ -1,5 +1,5 @@
 // src/pages/DecisionPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { importFromJudilibre } from '../services/decisions';
 
 function DecisionsPage() {
@@ -34,6 +34,13 @@ function DecisionsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   return (
     <div className="flex h-screen">
