@@ -9,11 +9,16 @@ const SearchPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [totalCount, setTotalCount] = useState(0); // ✅ Si tu veux total réel plus tard
+  const [totalCount, setTotalCount] = useState(0);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR');
+  };
 
   const fetchResults = async (filters) => {
     setLoading(true);
@@ -68,7 +73,6 @@ const SearchPage = () => {
   }, [successMessage]);
 
   const currentPage = parseInt(searchParams.get('page') || 1);
-  const totalPages = 10; // ✅ Valeur fictive pour MVP, ajuste si tu as un total réel
 
   return (
     <div className="flex h-screen">
@@ -97,21 +101,28 @@ const SearchPage = () => {
               {results.map((r, index) => (
                 <div
                   key={index}
-                  className="border rounded p-4 flex justify-between items-center bg-white shadow"
+                  className="border rounded p-4 flex justify-between items-start bg-white shadow"
                 >
                   <div>
                     <p className="font-semibold text-gray-800">
-                      📄 {r.city || r.jurisdiction} – {r.date}
+                      📄 {r.city || r.jurisdiction} – <span className="text-gray-500 text-sm">{formatDate(r.date)}</span>
                     </p>
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {r.keywords?.map((kw, i) => (
-                        <span
-                          key={i}
-                          className="bg-gray-200 text-sm px-2 py-1 rounded"
-                        >
-                          {kw}
-                        </span>
-                      ))}
+                    <p className="italic text-blue-800 text-sm mt-1">
+                      Type d’affaire : {r.case_type || 'N/A'}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {r.keywords?.length > 0 ? (
+                        r.keywords.map((kw, i) => (
+                          <span
+                            key={i}
+                            className="bg-gray-200 text-sm px-2 py-1 rounded"
+                          >
+                            {kw}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 text-sm">Aucun mot-clé</span>
+                      )}
                     </div>
                   </div>
                   <button
@@ -124,14 +135,13 @@ const SearchPage = () => {
               ))}
             </div>
 
-            {/* ✅ Pagination en dessous */}
             <Pagination
               currentPage={currentPage}
-              totalPages={Math.ceil(totalCount / 10)} // ✅ 10 = ton limit
+              totalPages={Math.ceil(totalCount / 10)}
               onPageChange={(newPage) => {
                 const params = Object.fromEntries([...searchParams]);
                 params.page = newPage;
-                params.limit = 10; // Toujours
+                params.limit = 10;
                 setSearchParams(params);
               }}
             />

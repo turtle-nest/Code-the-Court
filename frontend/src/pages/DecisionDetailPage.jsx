@@ -19,6 +19,11 @@ const DecisionDetailPage = () => {
   const [newKeyword, setNewKeyword] = useState('');
   const [message, setMessage] = useState(null);
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR');
+  };
+
   useEffect(() => {
     const fetchDecision = async () => {
       try {
@@ -71,7 +76,6 @@ const DecisionDetailPage = () => {
 
   return (
     <>
-      {/* ✅ Bouton Retour aux résultats */}
       <button
         onClick={() => navigate(-1)}
         className="mb-6 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
@@ -80,29 +84,33 @@ const DecisionDetailPage = () => {
       </button>
 
       <h2 className="text-xl italic mb-4">
-        📄 {decision.jurisdiction} — {new Date(decision.date).toLocaleDateString('fr-FR')}
+        📄 {decision.jurisdiction} — <span className="text-gray-500">{formatDate(decision.date)}</span>
       </h2>
 
       <div className="border rounded p-4 mb-6 bg-white">
         <h3 className="font-bold mb-2">Métadonnées</h3>
-        <p>Type d’affaire : <strong>{decision.case_type}</strong></p>
+        <p>Type d’affaire : <strong>{decision.case_type || 'N/A'}</strong></p>
         <p>Juridiction : <strong>{decision.jurisdiction}</strong></p>
 
         <div className="mt-2">
           <p className="font-semibold">Mots-clés :</p>
           <div className="flex flex-wrap gap-2 mt-1">
-            {decision.keywords.map((kw, i) => (
-              <span key={i} className="bg-gray-200 px-2 py-1 rounded text-sm flex items-center">
-                {kw}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveKeyword(kw)}
-                  className="ml-1 text-red-600 font-bold"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
+            {decision.keywords.length > 0 ? (
+              decision.keywords.map((kw, i) => (
+                <span key={i} className="bg-gray-200 px-2 py-1 rounded text-sm flex items-center">
+                  {kw}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveKeyword(kw)}
+                    className="ml-1 text-red-600 font-bold"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))
+            ) : (
+              <span className="text-gray-400 text-sm">Aucun mot-clé</span>
+            )}
           </div>
 
           <div className="flex mt-2 gap-2">
