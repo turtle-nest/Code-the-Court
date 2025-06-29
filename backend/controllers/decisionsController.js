@@ -1,14 +1,45 @@
 // backend/controllers/decisionsController.js
+
 const db = require('../config/db');
 const ApiError = require('../utils/apiError');
 const { fetchDecisionsFromJudilibre } = require('../services/judilibreService');
 const fs = require('fs');
 const path = require('path');
 
-// GET /api/decisions
+/**
+ * GET /api/decisions
+ * Liste toutes les décisions avec pagination et tri
+ */
 const getAllDecisions = async (req, res, next) => {
   try {
-    const { date, juridiction, type_affaire, keyword, start_date, end_date } = req.query;
+    const {
+      date, juridiction, type_affaire, keyword, start_date, end_date, source,
+      page = 1, limit = 20, sortBy = 'date', order = 'desc'
+    } = req.query;
+
+    const pageInt = parseInt(page);
+    const limitInt = parseInt(limit);
+
+    if (isNaN(pageInt) || pageInt < 1) {
+      return next(new ApiError('Invalid page number', 400));
+    }
+
+    if (isNaN(limitInt) || limitInt < 1 || limitInt > 100) {
+      return next(new ApiError('Invalid limit', 400));
+    }
+
+    const allowedSortBy = ['date', 'jurisdiction', 'case_type'];
+    const allowedOrder = ['asc', 'desc'];
+
+    if (!allowedSortBy.includes(sortBy)) {
+      return next(new ApiError('Invalid sortBy field', 400));
+    }
+
+    if (!allowedOrder.includes(order.toLowerCase())) {
+      return next(new ApiError('Invalid order', 400));
+    }
+
+    const offset = (pageInt - 1) * limitInt;
 
     let query = `
       SELECT 
@@ -67,24 +98,24 @@ const getAllDecisions = async (req, res, next) => {
       `;
     }
 
-    // ✅ Nouveau : filtre par source (multi)
-    if (req.query.source) {
-      if (Array.isArray(req.query.source)) {
-        const sources = req.query.source;
-        const placeholders = sources.map((_, i) => `$${values.length + i + 1}`).join(', ');
-        values.push(...sources);
+    if (source) {
+      if (Array.isArray(source)) {
+        const placeholders = source.map((_, i) => `$${values.length + i + 1}`).join(', ');
+        values.push(...source);
         query += ` AND d.source IN (${placeholders})`;
       } else {
-        values.push(req.query.source);
+        values.push(source);
         query += ` AND d.source = $${values.length}`;
       }
     }
 
     query += `
       GROUP BY d.id
-      ORDER BY d.date DESC
-      LIMIT 50;
+      ORDER BY d.${sortBy} ${order.toUpperCase()}
+      LIMIT $${values.length + 1} OFFSET $${values.length + 2};
     `;
+
+    values.push(limitInt, offset);
 
     const result = await db.query(query, values);
     res.status(200).json(result.rows);
@@ -94,7 +125,10 @@ const getAllDecisions = async (req, res, next) => {
   }
 };
 
-// GET /api/decisions/import
+/**
+ * GET /api/decisions/import
+ * Importe des décisions depuis l'API Judilibre ou un mock local
+ */
 const importDecisionsFromJudilibre = async (req, res, next) => {
   try {
     if (process.env.USE_MOCK === 'true') {
@@ -114,7 +148,9 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
   }
 };
 
-// GET /api/decisions/stats
+/**
+ * GET /api/decisions/stats
+ */
 const getDecisionsStats = async (req, res, next) => {
   try {
     const { rows: totalRows } = await db.query(`
@@ -137,6 +173,8 @@ const getDecisionsStats = async (req, res, next) => {
 
     const stats = {
       total: totalRows[0]?.total || 0,
+      archive: totalRows[0]?.archive || 0,
+      judilibre: totalRows[0]?.judilibre || 0,
       lastImport: {
         count: lastImportRows[0]?.count || 0,
         date: lastImportRows[0]?.date || null
@@ -150,7 +188,9 @@ const getDecisionsStats = async (req, res, next) => {
   }
 };
 
-// GET /api/decisions/juridictions
+/**
+ * GET /api/decisions/juridictions
+ */
 const getJurisdictions = async (req, res, next) => {
   try {
     const result = await db.query(
@@ -164,7 +204,9 @@ const getJurisdictions = async (req, res, next) => {
   }
 };
 
-// GET /api/decisions/case-types
+/**
+ * GET /api/decisions/case-types
+ */
 const getCaseTypes = async (req, res, next) => {
   try {
     const result = await db.query(
@@ -178,7 +220,9 @@ const getCaseTypes = async (req, res, next) => {
   }
 };
 
-// GET /api/decisions/:id
+/**
+ * GET /api/decisions/:id
+ */
 const getDecisionById = async (req, res, next) => {
   const { id } = req.params;
   try {
@@ -214,7 +258,7 @@ const getDecisionById = async (req, res, next) => {
   }
 };
 
-// ✅ EXPORT
+// ✅ EXPORT complet et propre
 module.exports = {
   getAllDecisions,
   getDecisionById,
