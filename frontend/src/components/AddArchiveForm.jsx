@@ -14,6 +14,9 @@ const AddArchiveForm = () => {
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [jurisdictions, setJurisdictions] = useState([]);
+  const [caseTypes, setCaseTypes] = useState([]);
+
   const maxSize = 5 * 1024 * 1024; // 5MB
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -31,6 +34,17 @@ const AddArchiveForm = () => {
       }
     },
   });
+
+  useEffect(() => {
+    // ✅ Charge la liste unique depuis /api/metadata
+    fetch('http://localhost:3000/api/metadata')
+      .then(res => res.json())
+      .then(data => {
+        setJurisdictions(data.jurisdictions || []);
+        setCaseTypes(data.caseTypes || []);
+      })
+      .catch(console.error);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,7 +64,7 @@ const AddArchiveForm = () => {
     formData.append('date', date);
     formData.append('jurisdiction', jurisdiction);
     formData.append('content', caseType);
-    formData.append('keywords', keywords); // ✅ Ajout du champ mots-clés
+    formData.append('keywords', keywords);
     formData.append('pdf', file);
 
     try {
@@ -116,9 +130,9 @@ const AddArchiveForm = () => {
           className="w-1/2 border rounded px-3 py-2"
         >
           <option value="">-- Juridiction --</option>
-          <option value="Cour d'appel">Cour d'appel</option>
-          <option value="Tribunal judiciaire">Tribunal judiciaire</option>
-          <option value="Conseil des prud'hommes">Conseil des prud'hommes</option>
+          {jurisdictions.map(j => (
+            <option key={j} value={j}>{j}</option>
+          ))}
         </select>
 
         <select
@@ -127,13 +141,12 @@ const AddArchiveForm = () => {
           className="w-1/2 border rounded px-3 py-2"
         >
           <option value="">-- Type d'affaire --</option>
-          <option value="Civil">Civil</option>
-          <option value="Pénal">Pénal</option>
-          <option value="Social">Social</option>
+          {caseTypes.map(t => (
+            <option key={t} value={t}>{t}</option>
+          ))}
         </select>
       </div>
 
-      {/* ✅ Champ mots-clés */}
       <input
         type="text"
         placeholder="Mots-clés (séparés par des virgules)"

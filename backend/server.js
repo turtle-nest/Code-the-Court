@@ -28,6 +28,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/notes', require('./routes/notes'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api', require('./routes/test'));
+app.use('/api/metadata', require('./routes/metadata'));
 
 // Error handler (should be last)
 app.use(errorHandler);

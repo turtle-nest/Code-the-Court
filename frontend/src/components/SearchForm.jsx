@@ -10,23 +10,19 @@ export default function SearchForm({ onSearch }) {
   const [juridiction, setJuridiction] = useState(searchParams.get('juridiction') || '');
   const [typeAffaire, setTypeAffaire] = useState(searchParams.get('type_affaire') || '');
   const [keyword, setKeyword] = useState(searchParams.get('keywords') || '');
-
-  // ✅ Nouveau : gestion du filtre source (array de valeurs)
   const [source, setSource] = useState(searchParams.getAll('source') || []);
 
-  const [juridictions, setJuridictions] = useState([]);
-  const [types, setTypes] = useState([]);
+  const [jurisdictions, setJurisdictions] = useState([]);
+  const [caseTypes, setCaseTypes] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/decisions/juridictions')
+    fetch('http://localhost:3000/api/metadata')
       .then(res => res.json())
-      .then(setJuridictions)
-      .catch(() => setJuridictions([]));
-
-    fetch('http://localhost:3000/api/decisions/case-types')
-      .then(res => res.json())
-      .then(setTypes)
-      .catch(() => setTypes([]));
+      .then(data => {
+        setJurisdictions(data.jurisdictions || []);
+        setCaseTypes(data.caseTypes || []);
+      })
+      .catch(console.error);
   }, []);
 
   const handleSourceChange = (e) => {
@@ -46,11 +42,10 @@ export default function SearchForm({ onSearch }) {
       juridiction,
       type_affaire: typeAffaire,
       keywords: keyword,
-      page: 1,         // ✅ pagination démarre toujours à 1
-      limit: 10        // ✅ toujours limité à 10 résultats max
+      page: 1,
+      limit: 10
     };
 
-    // ✅ Ajoute le filtre source seulement si au moins un est coché
     if (source.length > 0) {
       filters.source = source;
     }
@@ -71,7 +66,7 @@ export default function SearchForm({ onSearch }) {
           className="border px-3 py-2 rounded"
         >
           <option value="">-- Juridiction --</option>
-          {juridictions.map(j => (
+          {jurisdictions.map(j => (
             <option key={j} value={j}>{j}</option>
           ))}
         </select>
@@ -82,7 +77,7 @@ export default function SearchForm({ onSearch }) {
           className="border px-3 py-2 rounded"
         >
           <option value="">-- Type d'affaire --</option>
-          {types.map(t => (
+          {caseTypes.map(t => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
@@ -111,7 +106,6 @@ export default function SearchForm({ onSearch }) {
         />
       </div>
 
-      {/* ✅ Bloc filtres source */}
       <div className="flex gap-4 items-center">
         <label className="flex items-center gap-2">
           <input

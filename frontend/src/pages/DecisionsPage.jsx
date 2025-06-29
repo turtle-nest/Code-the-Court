@@ -1,4 +1,4 @@
-// src/pages/DecisionPage.jsx
+// src/pages/DecisionsPage.jsx
 import React, { useState, useEffect } from 'react';
 import { importFromJudilibre } from '../services/decisions';
 
@@ -10,9 +10,23 @@ function DecisionsPage() {
     endDate: '',
   });
 
+  const [jurisdictions, setJurisdictions] = useState([]);
+  const [caseTypes, setCaseTypes] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+
+  // ✅ Récupère les options depuis /api/metadata
+  useEffect(() => {
+    fetch('http://localhost:3000/api/metadata')
+      .then(res => res.json())
+      .then(data => {
+        setJurisdictions(data.jurisdictions || []);
+        setCaseTypes(data.caseTypes || []);
+      })
+      .catch(console.error);
+  }, []);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -60,8 +74,9 @@ function DecisionsPage() {
               required
             >
               <option value="">-- Choisir --</option>
-              <option value="Cour d'appel">Cour d'appel</option>
-              <option value="Cour de cassation">Cour de cassation</option>
+              {jurisdictions.map(j => (
+                <option key={j} value={j}>{j}</option>
+              ))}
             </select>
           </div>
 
@@ -75,10 +90,9 @@ function DecisionsPage() {
               required
             >
               <option value="">-- Choisir --</option>
-              <option value="Civil">Civil</option>
-              <option value="Pénal">Pénal</option>
-              <option value="Social">Social</option>
-              <option value="Commercial">Commercial</option>
+              {caseTypes.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
             </select>
           </div>
 
