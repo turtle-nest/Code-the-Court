@@ -1,50 +1,64 @@
--- Insert test users (safe)
+-- ============================================
+-- 📚 Insert test users (safe, fixed UUID)
+-- ============================================
 INSERT INTO users (id, email, password_hash, role, status)
 VALUES
-  (gen_random_uuid(), 'admin@example.com', crypt('Admin1234!', gen_salt('bf')), 'admin', 'approved'),
-  (gen_random_uuid(), 'user@example.com', crypt('User1234!', gen_salt('bf')), 'guest', 'pending')
+  ('11111111-2222-3333-4444-555555555555', 'admin@example.com', crypt('Admin1234!', gen_salt('bf')), 'admin', 'approved'),
+  ('22222222-3333-4444-5555-666666666666', 'user@example.com', crypt('User1234!', gen_salt('bf')), 'guest', 'pending')
 ON CONFLICT (email) DO NOTHING;
 
--- Insert test decisions
+-- ============================================
+-- 📚 Insert test decisions (harmonisé)
+-- ============================================
 INSERT INTO decisions (external_id, title, content, date, jurisdiction, source)
 VALUES
-  ('EX123456', 'Test Decision Title', 'Lorem ipsum dolor sit amet...', '2024-01-10', 'Cour de cassation', 'judilibre'),
-  (NULL, 'Affaire Dupont vs Martin', 'Texte de la décision.', '2024-01-15', 'Cour d''appel', 'judilibre');
+  ('EX123456', 'Arrêt Cour de cassation - Contrat de travail', 'Exemple de contenu décision sur contrat de travail.', '2024-01-10', 'Cour de cassation', 'judilibre'),
+  ('EX654321', 'Arrêt Cour d''appel Lyon - Droit public', 'Exemple de contenu décision droit public.', '2024-01-15', 'Cour d''appel Lyon', 'judilibre');
 
--- Insert test tags
+-- ============================================
+-- 📚 Insert test tags
+-- ============================================
 INSERT INTO tags (label)
 VALUES
-  ('contrat'),
-  ('travail'),
+  ('contrat de travail'),
+  ('licenciement'),
   ('droit public')
 ON CONFLICT DO NOTHING;
 
--- Link tags to decision
+-- ============================================
+-- 📚 Link tags to decisions
+-- ============================================
 INSERT INTO decision_tags (decision_id, tag_id)
 SELECT d.id, t.id
 FROM decisions d, tags t
-WHERE d.external_id = 'EX123456' AND t.label = 'travail';
+WHERE d.external_id = 'EX123456' AND t.label = 'contrat de travail';
 
--- Insert test archive
+INSERT INTO decision_tags (decision_id, tag_id)
+SELECT d.id, t.id
+FROM decisions d, tags t
+WHERE d.external_id = 'EX654321' AND t.label = 'droit public';
+
+-- ============================================
+-- 📚 Insert test archive (harmonisé)
+-- ============================================
 INSERT INTO archives (title, content, date, jurisdiction, location, user_id)
-SELECT
-  'Test Archive',
-  'Contenu archivé',
-  '2023-12-01',
-  'TA Lyon',
-  'Lyon',
-  u.id
-FROM users u
-WHERE u.email = 'admin@example.com'
-LIMIT 1;
+VALUES
+  ('Archive Lyon - Contrat de travail',
+   'Contenu archivé de test sur contrat de travail.',
+   '2023-12-01',
+   'Cour d''appel Lyon',
+   'Lyon',
+   '11111111-2222-3333-4444-555555555555');
 
--- Insert test note
+-- ============================================
+-- 📚 Insert test note
+-- ============================================
 INSERT INTO notes (user_id, target_id, target_type, content)
 SELECT
-  u.id,
+  '11111111-2222-3333-4444-555555555555',
   d.id,
   'decision',
-  'Cette décision est importante.'
-FROM users u, decisions d
-WHERE u.email = 'admin@example.com' AND d.external_id = 'EX123456'
+  'Cette décision test est importante pour vérifier les fonctionnalités.'
+FROM decisions d
+WHERE d.external_id = 'EX123456'
 LIMIT 1;

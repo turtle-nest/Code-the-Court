@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import SearchForm from '../components/SearchForm';
 import Pagination from '../components/Pagination';
+import { formatDecisionTitle } from '../utils/formatTitle'; // ✅
 
 const SearchPage = () => {
   const [results, setResults] = useState([]);
@@ -108,7 +109,10 @@ const SearchPage = () => {
                   key={index}
                   className="border rounded p-4 flex justify-between items-start bg-white shadow"
                 >
-                  <div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold mb-1">
+                      {formatDecisionTitle(r)}
+                    </h3>
                     <p className="font-semibold text-gray-800">
                       📄 {decodeHTML(r.city || r.jurisdiction)} – <span className="text-gray-500 text-sm">{formatDate(r.date)}</span>
                     </p>

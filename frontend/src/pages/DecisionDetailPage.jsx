@@ -1,12 +1,15 @@
 // src/pages/DecisionDetailPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { formatDecisionTitle } from '../utils/formatTitle'; // ✅
 
 const DecisionDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [decision, setDecision] = useState({
+    title: '',
+    label: '',
     jurisdiction: '',
     date: '',
     case_type: '',
@@ -87,6 +90,10 @@ const DecisionDetailPage = () => {
       >
         ← Retour aux résultats
       </button>
+
+      <h1 className="text-2xl font-bold mb-2">
+        {formatDecisionTitle(decision)}
+      </h1>
 
       <h2 className="text-xl italic mb-4">
         📄 {decodeHTML(decision.jurisdiction)} — <span className="text-gray-500">{formatDate(decision.date)}</span>

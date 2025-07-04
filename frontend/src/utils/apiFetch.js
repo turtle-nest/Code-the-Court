@@ -1,5 +1,3 @@
-// frontend/src/utils/apiFetch.js
-
 export async function apiFetch(url, options = {}) {
   const token = localStorage.getItem('token');
 
@@ -18,19 +16,18 @@ export async function apiFetch(url, options = {}) {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      // ✅ Ne déconnecte que si ce n’est PAS un compte pending
-      if ((res.status === 401 || res.status === 403) && data.message !== 'pending') {
-        console.warn('[🔒] Session expirée ou accès refusé. Déconnexion.');
-        localStorage.removeItem('token');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('role');
-        window.location.href = '/login?expired=1';
-        return;
+      if (res.status === 401 || res.status === 403) {
+        console.warn('[🔒] Session expirée ou accès refusé.');
+        // 🔥 En dev ➜ Ne pas logout automatiquement
+        // localStorage.removeItem('token');
+        // window.location.href = '/login?expired=1';
+        // return;
       }
 
-      const errorMessage = data.message || data.error || 'Request failed';
-      throw new Error(errorMessage);
+      console.warn(`[⚠️] API error ${res.status} :`, data.message || data.error);
+      throw new Error(data.message || data.error || 'Request failed');
     }
+
 
     return data;
   } catch (err) {

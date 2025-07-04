@@ -5,16 +5,31 @@ const ApiError = require('../utils/apiError');
 
 const createArchive = async (req, res, next) => {
   const { title, content, date, jurisdiction, location } = req.body;
-  const user_id = req.user.id;
   const file = req.file;
 
-  // ✅ Vérification basique
-  if (!title || !user_id || !file) {
-    return next(new ApiError('title, user_id, and file are required', 400));
+  // ✅ 1️⃣ Vérifie que req.user existe
+  if (!req.user || !req.user.id) {
+    return next(new ApiError('User authentication required to create an archive.', 401));
+  }
+
+  const user_id = req.user.id;
+
+  // ✅ 2️⃣ Vérifie que l'utilisateur existe vraiment
+  const { rows: userRows } = await db.query(
+    `SELECT id FROM users WHERE id = $1`,
+    [user_id]
+  );
+  if (userRows.length === 0) {
+    return next(new ApiError(`User ID ${user_id} not found in users table.`, 400));
+  }
+
+  // ✅ 3️⃣ Vérifie les champs requis
+  if (!title || !file) {
+    return next(new ApiError('title and file are required', 400));
   }
 
   try {
-    // 📂 1️⃣ Insert dans ARCHIVES
+    // 📂 Insert dans ARCHIVES
     const archiveResult = await db.query(
       `
       INSERT INTO archives (title, content, date, jurisdiction, location, user_id, file_path)
@@ -26,7 +41,7 @@ const createArchive = async (req, res, next) => {
 
     const archive = archiveResult.rows[0];
 
-    // 📄 2️⃣ Insert aussi dans DECISIONS (source = 'archive')
+    // 📄 Insert aussi dans DECISIONS (source = 'archive')
     await db.query(
       `
       INSERT INTO decisions (title, content, date, jurisdiction, source)

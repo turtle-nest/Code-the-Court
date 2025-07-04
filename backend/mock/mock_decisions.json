@@ -1,86 +1,166 @@
 {
-  "count": 10,
-  "timestamp": "2025-06-28T23:00:00Z",
+  "count": 20,
+  "timestamp": "2025-07-04T12:00:00Z",
   "decisions": [
     {
-      "external_id": "JDLB-0001",
-      "title": "Arrêt Cour de cassation - Civil",
-      "jurisdiction": "Cour de cassation",
-      "case_type": "Civil",
-      "date": "2024-01-15",
-      "content": "Contenu fictif décision 1."
+      "external_id": "EXT001",
+      "title": "Arrêt Marseille - Succession",
+      "jurisdiction": "Marseille",
+      "case_type": "succession",
+      "date": "2021-06-14",
+      "content": "Décision sur succession et homosexualité"
     },
     {
-      "external_id": "JDLB-0002",
-      "title": "Arrêt Cour de cassation - Pénal",
-      "jurisdiction": "Cour de cassation",
-      "case_type": "Pénal",
-      "date": "2024-02-10",
-      "content": "Contenu fictif décision 2."
+      "external_id": "EXT002",
+      "title": "Arrêt Cours d’appel Lyon - Testament",
+      "jurisdiction": "Cours d’appel Lyon",
+      "case_type": "testament",
+      "date": "2020-02-03",
+      "content": "Décision testament frère/sœur"
     },
     {
-      "external_id": "JDLB-0003",
-      "title": "Arrêt Cour de cassation - Social",
-      "jurisdiction": "Cour de cassation",
-      "case_type": "Social",
-      "date": "2024-03-05",
-      "content": "Contenu fictif décision 3."
+      "external_id": "EXT003",
+      "title": "Arrêt Paris - Divorce",
+      "jurisdiction": "Paris",
+      "case_type": "divorce",
+      "date": "2023-05-12",
+      "content": "Jugement divorce pension alimentaire"
     },
     {
-      "external_id": "JDLB-0004",
-      "title": "Arrêt Cour de cassation - Commercial",
-      "jurisdiction": "Cour de cassation",
-      "case_type": "Commercial",
-      "date": "2024-04-12",
-      "content": "Contenu fictif décision 4."
+      "external_id": "EXT004",
+      "title": "Arrêt Nanterre - Licenciement",
+      "jurisdiction": "Nanterre",
+      "case_type": "contrat de travail",
+      "date": "2022-11-08",
+      "content": "Affaire licenciement abusif"
     },
     {
-      "external_id": "JDLB-0005",
-      "title": "Arrêt Cour d'appel - Civil",
-      "jurisdiction": "Cour d'appel",
-      "case_type": "Civil",
-      "date": "2024-05-01",
-      "content": "Contenu fictif décision 5."
+      "external_id": "EXT005",
+      "title": "Arrêt Bordeaux - Résiliation bail",
+      "jurisdiction": "Bordeaux",
+      "case_type": "immobilier",
+      "date": "2023-04-18",
+      "content": "Résiliation bail immobilier"
     },
     {
-      "external_id": "JDLB-0006",
-      "title": "Arrêt Cour d'appel - Pénal",
-      "jurisdiction": "Cour d'appel",
-      "case_type": "Pénal",
-      "date": "2024-05-20",
-      "content": "Contenu fictif décision 6."
+      "external_id": "EXT006",
+      "title": "Arrêt Rennes - Pension alimentaire",
+      "jurisdiction": "Rennes",
+      "case_type": "divorce",
+      "date": "2023-03-01",
+      "content": "Conflit sur pension alimentaire"
     },
     {
-      "external_id": "JDLB-0007",
-      "title": "Arrêt Cour d'appel - Social",
-      "jurisdiction": "Cour d'appel",
-      "case_type": "Social",
-      "date": "2024-06-02",
-      "content": "Contenu fictif décision 7."
+      "external_id": "EXT007",
+      "title": "Arrêt Toulouse - Contrat de travail",
+      "jurisdiction": "Toulouse",
+      "case_type": "contrat de travail",
+      "date": "2022-10-10",
+      "content": "Litige contrat de travail"
     },
     {
-      "external_id": "JDLB-0008",
-      "title": "Arrêt Cour d'appel - Commercial",
-      "jurisdiction": "Cour d'appel",
-      "case_type": "Commercial",
-      "date": "2024-06-10",
-      "content": "Contenu fictif décision 8."
+      "external_id": "EXT008",
+      "title": "Arrêt Nice - Testament",
+      "jurisdiction": "Nice",
+      "case_type": "testament",
+      "date": "2021-07-15",
+      "content": "Testament contesté"
     },
     {
-      "external_id": "JDLB-0009",
-      "title": "Arrêt Cour d'appel - Civil 2",
-      "jurisdiction": "Cour d'appel",
-      "case_type": "Civil",
-      "date": "2024-06-15",
-      "content": "Contenu fictif décision 9."
+      "external_id": "EXT009",
+      "title": "Arrêt Montpellier - Résiliation bail",
+      "jurisdiction": "Montpellier",
+      "case_type": "immobilier",
+      "date": "2020-09-22",
+      "content": "Résiliation bail logement"
     },
     {
-      "external_id": "JDLB-0010",
-      "title": "Arrêt Cour de cassation - Pénal 2",
-      "jurisdiction": "Cour de cassation",
-      "case_type": "Pénal",
-      "date": "2024-06-20",
-      "content": "Contenu fictif décision 10."
+      "external_id": "EXT010",
+      "title": "Arrêt Strasbourg - Divorce",
+      "jurisdiction": "Strasbourg",
+      "case_type": "divorce",
+      "date": "2019-06-04",
+      "content": "Affaire de divorce"
+    },
+    {
+      "external_id": "EXT011",
+      "title": "Arrêt Lille - Succession",
+      "jurisdiction": "Lille",
+      "case_type": "succession",
+      "date": "2021-02-19",
+      "content": "Litige héritage succession"
+    },
+    {
+      "external_id": "EXT012",
+      "title": "Arrêt Versailles - Pension alimentaire",
+      "jurisdiction": "Versailles",
+      "case_type": "divorce",
+      "date": "2022-07-08",
+      "content": "Affaire pension alimentaire"
+    },
+    {
+      "external_id": "EXT013",
+      "title": "Arrêt Nancy - Licenciement",
+      "jurisdiction": "Nancy",
+      "case_type": "contrat de travail",
+      "date": "2021-12-15",
+      "content": "Licenciement contesté"
+    },
+    {
+      "external_id": "EXT014",
+      "title": "Arrêt Aix-en-Provence - Testament",
+      "jurisdiction": "Aix-en-Provence",
+      "case_type": "testament",
+      "date": "2020-05-02",
+      "content": "Contestations testamentaires"
+    },
+    {
+      "external_id": "EXT015",
+      "title": "Arrêt Dijon - Bail immobilier",
+      "jurisdiction": "Dijon",
+      "case_type": "immobilier",
+      "date": "2022-09-10",
+      "content": "Litige immobilier bail"
+    },
+    {
+      "external_id": "EXT016",
+      "title": "Arrêt Grenoble - Garde enfant",
+      "jurisdiction": "Grenoble",
+      "case_type": "divorce",
+      "date": "2023-06-28",
+      "content": "Divorce et garde enfant"
+    },
+    {
+      "external_id": "EXT017",
+      "title": "Arrêt Orléans - Licenciement",
+      "jurisdiction": "Orléans",
+      "case_type": "contrat de travail",
+      "date": "2023-04-05",
+      "content": "Licenciement abusif"
+    },
+    {
+      "external_id": "EXT018",
+      "title": "Arrêt Poitiers - Résiliation bail",
+      "jurisdiction": "Poitiers",
+      "case_type": "immobilier",
+      "date": "2022-03-13",
+      "content": "Résiliation de bail contestée"
+    },
+    {
+      "external_id": "EXT019",
+      "title": "Arrêt Metz - Succession",
+      "jurisdiction": "Metz",
+      "case_type": "succession",
+      "date": "2021-01-30",
+      "content": "Affaire de succession familiale"
+    },
+    {
+      "external_id": "EXT020",
+      "title": "Arrêt Rouen - Testament",
+      "jurisdiction": "Rouen",
+      "case_type": "testament",
+      "date": "2022-11-17",
+      "content": "Litige testamentaire frère/sœur"
     }
   ]
 }
