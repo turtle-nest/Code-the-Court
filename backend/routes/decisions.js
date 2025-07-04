@@ -12,7 +12,8 @@ const {
   importDecisionsFromJudilibre,
   getJurisdictions,
   getCaseTypes,
-  getDecisionsStats
+  getDecisionsStats,
+  updateDecisionKeywords
 } = require('../controllers/decisionsController');
 
 const { validateDecisionsQuery } = require('../middlewares/validateInput');
@@ -43,5 +44,6 @@ router.get('/stats', getDecisionsStats);
 router.get('/juridictions', getJurisdictions);
 router.get('/case-types', getCaseTypes);
 router.get('/:id', getDecisionById);
+router.put('/:id/keywords', authMiddleware, updateDecisionKeywords);
 
 module.exports = router;

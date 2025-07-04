@@ -9,14 +9,19 @@ const errorHandler = require('./middlewares/errorHandler');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// ✅ Middleware CORS
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
+
+// ✅ IMPORTANT : Middleware JSON pour parser req.body
 app.use(express.json());
 
-// Routes
+// ✅ Si tu attends des formulaires x-www-form-urlencoded (optionnel)
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ Routes
 app.get('/', (req, res) => {
   res.send('SocioJustice API is running!');
 });
@@ -30,10 +35,10 @@ app.use('/api/profile', require('./routes/profile'));
 app.use('/api', require('./routes/test'));
 app.use('/api/metadata', require('./routes/metadata'));
 
-// Error handler (should be last)
+// ✅ Error handler (always last)
 app.use(errorHandler);
 
-// Test DB query → UNIQUEMENT en mode script direct
+// ✅ Test DB + démarrage
 if (require.main === module) {
   db.query('SELECT NOW()')
     .then(res => console.log('📅 DB Time:', res.rows[0].now))

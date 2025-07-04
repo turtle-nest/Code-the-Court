@@ -13,3 +13,11 @@ export async function getDecisionStats() {
 export async function importFromJudilibre() {
   return apiFetch('/api/decisions/import');
 }
+
+export async function updateDecisionKeywords(id, keywords) {
+  return apiFetch(`/api/decisions/${id}/keywords`, {
+    method: 'PUT',
+    body: JSON.stringify({ keywords }),
+  });
+}
+

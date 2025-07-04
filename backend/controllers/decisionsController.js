@@ -6,6 +6,82 @@ const fs = require('fs');
 const path = require('path');
 
 /**
+ * PUT /api/decisions/:id/keywords
+ * Met à jour les mots-clés pour une décision
+ */
+const updateDecisionKeywords = async (req, res, next) => {
+  const { id } = req.params;
+  const { keywords } = req.body;
+
+  if (!Array.isArray(keywords)) {
+    return next(new ApiError('Invalid keywords format', 400));
+  }
+
+  try {
+    // 1) Supprimer les liens existants
+    await db.query('DELETE FROM decision_tags WHERE decision_id = $1', [id]);
+
+    for (const kw of keywords) {
+      const label = kw.trim();
+      if (!label) continue;
+
+      // Vérifier si le tag existe déjà
+      const { rows } = await db.query(
+        'SELECT id FROM tags WHERE label = $1',
+        [label]
+      );
+
+      let tagId;
+      if (rows.length > 0) {
+        tagId = rows[0].id;
+      } else {
+        const insertResult = await db.query(
+          'INSERT INTO tags (label) VALUES ($1) RETURNING id',
+          [label]
+        );
+        tagId = insertResult.rows[0].id;
+      }
+
+      await db.query(
+        'INSERT INTO decision_tags (decision_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [id, tagId]
+      );
+    }
+
+    // 2) Retourner la décision mise à jour avec ses mots-clés
+    const { rows: updated } = await db.query(
+      `
+      SELECT 
+        d.id,
+        d.title,
+        d.content,
+        d.date,
+        d.jurisdiction,
+        d.case_type,
+        d.source,
+        d.public,
+        COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
+      FROM decisions d
+      LEFT JOIN decision_tags dt ON dt.decision_id = d.id
+      LEFT JOIN tags t ON t.id = dt.tag_id
+      WHERE d.id = $1
+      GROUP BY d.id;
+      `,
+      [id]
+    );
+
+    if (updated.length === 0) {
+      return next(new ApiError('Decision not found', 404));
+    }
+
+    res.status(200).json(updated[0]);
+  } catch (error) {
+    console.error('❌ Error updating keywords:', error);
+    next(new ApiError('Failed to update keywords', 500));
+  }
+};
+
+/**
  * GET /api/decisions
  * Liste toutes les décisions avec pagination et tri
  */
@@ -271,4 +347,5 @@ module.exports = {
   getDecisionsStats,
   getJurisdictions,
   getCaseTypes,
+  updateDecisionKeywords,
 };
