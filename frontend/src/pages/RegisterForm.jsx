@@ -15,6 +15,7 @@ const RegisterForm = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setError(null);
 
     if (password !== confirmPwd) {
       setError('Les mots de passe ne correspondent pas.');
@@ -22,7 +23,7 @@ const RegisterForm = () => {
     }
 
     try {
-      await apiFetch('/api/users/register', {
+      const data = await apiFetch('/api/users/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -33,17 +34,21 @@ const RegisterForm = () => {
         }),
       });
 
+      console.log('[✅] Registration response:', data);
+
       setSuccess(true);
       setError(null);
+
+      setTimeout(() => navigate('/login'), 2500);
+
     } catch (err) {
       console.error('[❌] Register error:', err);
-      setError('Erreur lors de l’envoi du formulaire.');
+      setError(err.message || 'Erreur lors de l’envoi du formulaire.');
     }
   };
 
   return (
     <div className="flex flex-1">
-
       <main className="flex-1 flex items-center justify-center">
         <form
           onSubmit={handleRegister}

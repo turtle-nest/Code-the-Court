@@ -1,3 +1,4 @@
+// backend/controllers/authController.js
 const db = require('../config/db');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
@@ -19,7 +20,7 @@ const login = async (req, res, next) => {
     }
 
     if (user.status !== 'approved') {
-      return res.status(403).json({ message: 'pending' });
+      return res.status(403).json({ message: 'Your account is pending approval.' });
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
@@ -44,4 +45,40 @@ const login = async (req, res, next) => {
   }
 };
 
-module.exports = { login };
+// ✅ Nouveau contrôleur pour l'inscription
+const registerUser = async (req, res, next) => {
+  const { username, email, password, institution } = req.body;
+
+  if (!username || !email || !password) {
+    return next(new ApiError('Username, email, and password are required', 400));
+  }
+
+  try {
+    // Vérifier doublon email
+    const emailCheck = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (emailCheck.rows.length > 0) {
+      return next(new ApiError('Email already in use', 409));
+    }
+
+    // Hasher le mot de passe
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insérer l'utilisateur en BDD
+    const result = await db.query(
+      `INSERT INTO users (username, email, password_hash, institution, status)
+       VALUES ($1, $2, $3, $4, 'pending')
+       RETURNING id`,
+      [username, email, hashedPassword, institution]
+    );
+
+    res.status(201).json({
+      message: 'Registration request submitted successfully. Awaiting admin approval.',
+      userId: result.rows[0].id,
+    });
+  } catch (err) {
+    console.error('Register error:', err);
+    next(new ApiError('Internal server error', 500));
+  }
+};
+
+module.exports = { login, registerUser };
