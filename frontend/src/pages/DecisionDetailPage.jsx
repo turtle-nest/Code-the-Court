@@ -1,3 +1,4 @@
+// ✅ src/pages/DecisionDetailPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { formatDecisionTitle } from '../utils/formatTitle';
@@ -92,15 +93,28 @@ const DecisionDetailPage = () => {
 
       <h1 className="text-2xl font-bold mb-2">{formatDecisionTitle(decision)}</h1>
       <h2 className="text-xl italic mb-4">
-        📄 {decodeHTML(decision.jurisdiction)} — <span className="text-gray-500">{formatDate(decision.date)}</span>
+        📄 {decodeHTML(decision.jurisdiction)} —{' '}
+        <span className="text-gray-500">{formatDate(decision.date)}</span>
       </h2>
 
+      {/* ✅ Contenu de la décision */}
+      <div className="border rounded p-4 mb-6 bg-white">
+        <h3 className="font-bold mb-2">Contenu de la décision :</h3>
+        <p className="whitespace-pre-wrap">
+          {decodeHTML(decision.content) || 'Aucun contenu disponible.'}
+        </p>
+      </div>
+
+      {/* ✅ Bloc mots-clés */}
       <div className="border rounded p-4 mb-6 bg-white">
         <h3 className="font-bold mb-2">Mots-clés :</h3>
         <div className="flex flex-wrap gap-2 mt-1">
           {decision.keywords?.length > 0 ? (
             decision.keywords.map((kw, i) => (
-              <span key={i} className="bg-gray-200 px-2 py-1 rounded text-sm flex items-center">
+              <span
+                key={i}
+                className="bg-gray-200 px-2 py-1 rounded text-sm flex items-center"
+              >
                 {kw}
                 <button
                   type="button"

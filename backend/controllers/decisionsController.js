@@ -335,11 +335,12 @@ const getCaseTypes = async (req, res, next) => {
 
 /**
  * GET /api/decisions/:id
+ * Récupère une décision par ID OU external_id
  */
 const getDecisionById = async (req, res, next) => {
   const { id } = req.params;
 
-  // ✅ Vérifie UUID
+  // Vérifie UUID valide
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(id)) {
     return next(new ApiError(`Invalid UUID format for id: ${id}`, 400));
@@ -362,14 +363,14 @@ const getDecisionById = async (req, res, next) => {
       FROM decisions d
       LEFT JOIN decision_tags dt ON dt.decision_id = d.id
       LEFT JOIN tags t ON t.id = dt.tag_id
-      WHERE d.id = $1
+      WHERE d.id = $1 OR d.external_id = $1
       GROUP BY d.id;
       `,
       [id]
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: `Decision not found for id ${id}` });
+      return res.status(404).json({ message: `Decision not found for id or external_id ${id}` });
     }
 
     res.status(200).json(rows[0]);
@@ -379,7 +380,6 @@ const getDecisionById = async (req, res, next) => {
   }
 };
 
-// ✅ EXPORT
 module.exports = {
   getAllDecisions,
   getDecisionById,
