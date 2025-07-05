@@ -1,4 +1,5 @@
 // backend/middlewares/authMiddleware.js
+
 const jwt = require('jsonwebtoken');
 const ApiError = require('../utils/apiError');
 
@@ -27,16 +28,27 @@ const authMiddleware = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // ✅ Log payload pour debug (ATTENTION à retirer en prod)
+    // ✅ Log de debug — à désactiver en production
     console.log('✅ JWT verified. Payload:', decoded);
 
-    // Utilise `sub` par convention OAuth2, fallback sur `id` si besoin
+    // ✅ Convention OAuth2 → `sub` OU fallback `id`
     req.user = { id: decoded.sub || decoded.id };
+
+    if (!req.user.id) {
+      console.warn('❌ JWT payload missing user id');
+      return next(new ApiError('Unauthorized: Invalid token payload', 401));
+    }
 
     next();
   } catch (err) {
     console.error('❌ JWT verification failed:', err.message);
-    return next(new ApiError('Unauthorized: Invalid or expired token', 401));
+
+    // Si c’est une expiration → message explicite
+    if (err.name === 'TokenExpiredError') {
+      return next(new ApiError('Unauthorized: Token expired', 401));
+    }
+
+    return next(new ApiError('Unauthorized: Invalid token', 401));
   }
 };
 

@@ -1,3 +1,4 @@
+// src/utils/apiFetch.js
 export async function apiFetch(url, options = {}) {
   const token = localStorage.getItem('token');
 
@@ -9,7 +10,7 @@ export async function apiFetch(url, options = {}) {
   }
 
   // ✅ Ajoute Content-Type si body présent
-  if (options.body && !headers.has('Content-Type')) {
+  if (options.body && !headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 

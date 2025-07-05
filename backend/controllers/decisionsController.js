@@ -311,13 +311,14 @@ const getDecisionById = async (req, res, next) => {
       `
       SELECT 
         d.id,
+        d.external_id,
         d.title,
         d.content,
         d.date,
         d.jurisdiction,
         d.case_type,
         d.source,
-        d.public,
+        d.pdf_link,
         COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
       FROM decisions d
       LEFT JOIN decision_tags dt ON dt.decision_id = d.id
@@ -329,7 +330,7 @@ const getDecisionById = async (req, res, next) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: 'Decision not found' });
+      return res.status(404).json({ message: `Decision not found for id ${id}` });
     }
 
     res.status(200).json(rows[0]);

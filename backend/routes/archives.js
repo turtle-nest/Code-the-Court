@@ -1,3 +1,5 @@
+// backend/routes/archives.js
+
 const express = require('express');
 const router = express.Router();
 
@@ -6,24 +8,15 @@ const upload = require('../middlewares/upload');
 const { createArchive, getAllArchives } = require('../controllers/archivesController');
 const { validateCreateArchive } = require('../middlewares/validateInput');
 
-// 🔒 GET all archives (public)
+// ✅ GET all archives (public ou auth si tu veux)
 router.get('/', getAllArchives);
 
-// ✅ Upload PDF obligatoire
+// ✅ POST archive avec upload PDF
 router.post(
   '/',
   authMiddleware,
-  upload.single('pdf'),
-  validateCreateArchive,
-  createArchive
-);
-
-// ✅ Route DEBUG : teste validation JSON sans upload
-router.post(
-  '/debug',
-  authMiddleware,
-  upload.none(),
-  validateCreateArchive,
+  upload.single('pdf'),   // ✅ MULTER gère le parsing du form-data ici
+  validateCreateArchive,  // ✅ Ta vérif custom du body
   createArchive
 );
 

@@ -1,5 +1,6 @@
 // backend/controllers/archivesController.js
 
+const path = require('path');
 const db = require('../config/db');
 const ApiError = require('../utils/apiError');
 
@@ -7,14 +8,12 @@ const createArchive = async (req, res, next) => {
   const { title, content, date, jurisdiction, location } = req.body;
   const file = req.file;
 
-  // ✅ 1️⃣ Vérifie que req.user existe
   if (!req.user || !req.user.id) {
     return next(new ApiError('User authentication required to create an archive.', 401));
   }
 
   const user_id = req.user.id;
 
-  // ✅ 2️⃣ Vérifie que l'utilisateur existe vraiment
   const { rows: userRows } = await db.query(
     `SELECT id FROM users WHERE id = $1`,
     [user_id]
@@ -23,13 +22,15 @@ const createArchive = async (req, res, next) => {
     return next(new ApiError(`User ID ${user_id} not found in users table.`, 400));
   }
 
-  // ✅ 3️⃣ Vérifie les champs requis
   if (!title || !file) {
-    return next(new ApiError('title and file are required', 400));
+    return next(new ApiError('Title and PDF file are required', 400));
   }
 
   try {
-    // 📂 Insert dans ARCHIVES
+    // ✅ Construis l'URL publique vers ton PDF uploadé
+    const pdfLink = `${process.env.BACKEND_URL || 'http://localhost:3000'}/${file.path}`;
+
+    // ✅ 1) Insère l'archive
     const archiveResult = await db.query(
       `
       INSERT INTO archives (title, content, date, jurisdiction, location, user_id, file_path)
@@ -41,18 +42,37 @@ const createArchive = async (req, res, next) => {
 
     const archive = archiveResult.rows[0];
 
-    // 📄 Insert aussi dans DECISIONS (source = 'archive')
-    await db.query(
+    // ✅ 2) Insère la décision reliée avec external_id = archive.id
+    // et stocke bien le pdf_link
+    const decisionResult = await db.query(
       `
-      INSERT INTO decisions (title, content, date, jurisdiction, source)
-      VALUES ($1, $2, $3, $4, 'archive');
+      INSERT INTO decisions (external_id, title, content, date, jurisdiction, source, pdf_link)
+      VALUES ($1, $2, $3, $4, $5, 'archive', $6)
+      RETURNING id, pdf_link;
       `,
-      [archive.title, archive.content, archive.date, archive.jurisdiction]
+      [
+        archive.id,
+        archive.title,
+        archive.content,
+        archive.date,
+        archive.jurisdiction,
+        pdfLink
+      ]
     );
 
+    const decisionId = decisionResult.rows[0].id;
+    const savedPdfLink = decisionResult.rows[0].pdf_link;
+
+    // ✅ Vérifie et log pour debug
+    console.log(`✅ New decision ID: ${decisionId}`);
+    console.log(`✅ PDF link saved: ${savedPdfLink}`);
+
+    // ✅ 3) Retourne au frontend le bon ID pour redirection
     res.status(201).json({
-      message: '✅ Archive créée et ajoutée aux décisions.',
-      archive_id: archive.id
+      message: '✅ Archive créée et décision liée.',
+      archive_id: archive.id,
+      decision_id: decisionId,
+      pdf_link: savedPdfLink
     });
 
   } catch (error) {
@@ -80,5 +100,5 @@ const getAllArchives = async (req, res, next) => {
 
 module.exports = {
   createArchive,
-  getAllArchives,
+  getAllArchives
 };

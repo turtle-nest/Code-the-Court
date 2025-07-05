@@ -8,12 +8,37 @@ VALUES
 ON CONFLICT (email) DO NOTHING;
 
 -- ============================================
--- 📚 Insert test decisions (harmonisé)
+-- 📚 Insert test archive + decision liée
+-- ============================================
+WITH new_archive AS (
+  INSERT INTO archives (id, title, content, date, jurisdiction, location, user_id)
+  VALUES (
+    gen_random_uuid(),
+    'Archive Lyon - Contrat de travail',
+    'Contenu archivé de test sur contrat de travail.',
+    '2023-12-01',
+    'Cour d''appel Lyon',
+    'Lyon',
+    '11111111-2222-3333-4444-555555555555'
+  )
+  RETURNING id
+)
+INSERT INTO decisions (external_id, title, content, date, jurisdiction, source)
+SELECT
+  id,
+  'Arrêt Cour de cassation - Contrat de travail',
+  'Exemple de contenu décision sur contrat de travail.',
+  '2024-01-10',
+  'Cour de cassation',
+  'archive'
+FROM new_archive;
+
+-- ============================================
+-- 📚 Insert test decision sans archive (Judilibre)
 -- ============================================
 INSERT INTO decisions (external_id, title, content, date, jurisdiction, source)
 VALUES
-  ('EX123456', 'Arrêt Cour de cassation - Contrat de travail', 'Exemple de contenu décision sur contrat de travail.', '2024-01-10', 'Cour de cassation', 'judilibre'),
-  ('EX654321', 'Arrêt Cour d''appel Lyon - Droit public', 'Exemple de contenu décision droit public.', '2024-01-15', 'Cour d''appel Lyon', 'judilibre');
+  (gen_random_uuid(), 'Arrêt Cour d''appel Lyon - Droit public', 'Exemple de contenu décision droit public.', '2024-01-15', 'Cour d''appel Lyon', 'judilibre');
 
 -- ============================================
 -- 📚 Insert test tags
@@ -31,24 +56,12 @@ ON CONFLICT DO NOTHING;
 INSERT INTO decision_tags (decision_id, tag_id)
 SELECT d.id, t.id
 FROM decisions d, tags t
-WHERE d.external_id = 'EX123456' AND t.label = 'contrat de travail';
+WHERE d.title ILIKE '%Contrat de travail%' AND t.label = 'contrat de travail';
 
 INSERT INTO decision_tags (decision_id, tag_id)
 SELECT d.id, t.id
 FROM decisions d, tags t
-WHERE d.external_id = 'EX654321' AND t.label = 'droit public';
-
--- ============================================
--- 📚 Insert test archive (harmonisé)
--- ============================================
-INSERT INTO archives (title, content, date, jurisdiction, location, user_id)
-VALUES
-  ('Archive Lyon - Contrat de travail',
-   'Contenu archivé de test sur contrat de travail.',
-   '2023-12-01',
-   'Cour d''appel Lyon',
-   'Lyon',
-   '11111111-2222-3333-4444-555555555555');
+WHERE d.title ILIKE '%Droit public%' AND t.label = 'droit public';
 
 -- ============================================
 -- 📚 Insert test note
@@ -60,5 +73,5 @@ SELECT
   'decision',
   'Cette décision test est importante pour vérifier les fonctionnalités.'
 FROM decisions d
-WHERE d.external_id = 'EX123456'
+WHERE d.title ILIKE '%Contrat de travail%'
 LIMIT 1;

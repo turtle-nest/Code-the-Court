@@ -19,11 +19,11 @@ $$;
 -- ============================================
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  username VARCHAR, -- ✅ Ajout du username
+  username VARCHAR,
   email VARCHAR NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  institution VARCHAR, -- ✅ Ajout de institution
-  role VARCHAR NOT NULL DEFAULT 'guest', -- ENUM-like: 'guest', 'user', 'admin'
+  institution VARCHAR,
+  role VARCHAR NOT NULL DEFAULT 'guest',
   status user_status NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -33,13 +33,14 @@ CREATE TABLE IF NOT EXISTS users (
 -- ============================================
 CREATE TABLE IF NOT EXISTS decisions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  external_id VARCHAR UNIQUE,
+  external_id UUID UNIQUE, -- ✅ UUID → fait le lien avec archive.id
   title TEXT NOT NULL,
   content TEXT,
   date DATE,
   jurisdiction VARCHAR,
   case_type VARCHAR,
   source VARCHAR NOT NULL DEFAULT 'judilibre',
+  pdf_link TEXT, -- ✅ lien vers ton PDF
   public BOOLEAN DEFAULT TRUE,
   imported_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

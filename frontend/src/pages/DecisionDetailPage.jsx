@@ -1,4 +1,3 @@
-// src/pages/DecisionDetailPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { formatDecisionTitle } from '../utils/formatTitle';
@@ -15,7 +14,7 @@ const DecisionDetailPage = () => {
     case_type: '',
     keywords: [],
     content: '',
-    pdf_url: ''
+    pdf_link: ''
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,11 +22,13 @@ const DecisionDetailPage = () => {
   const [message, setMessage] = useState(null);
 
   const formatDate = (dateString) => {
+    if (!dateString) return '—';
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR');
   };
 
   const decodeHTML = (str) => {
+    if (!str) return '';
     const parser = new DOMParser();
     return parser.parseFromString(`<!doctype html><body>${str}`, 'text/html').body.textContent;
   };
@@ -40,7 +41,7 @@ const DecisionDetailPage = () => {
       setDecision(data);
     } catch (err) {
       console.error('[❌] Fetch decision error:', err);
-      setError('❌ Erreur lors du chargement de la décision.');
+      setError(`❌ Erreur lors du chargement de la décision (ID : ${id})`);
     } finally {
       setLoading(false);
     }
@@ -51,7 +52,7 @@ const DecisionDetailPage = () => {
   }, [id]);
 
   const handleAddKeyword = () => {
-    if (newKeyword.trim() !== '') {
+    if (newKeyword.trim()) {
       setDecision({
         ...decision,
         keywords: [...decision.keywords, newKeyword.trim()]
@@ -70,7 +71,7 @@ const DecisionDetailPage = () => {
   const handleSaveKeywords = async () => {
     try {
       const updated = await updateDecisionKeywords(id, decision.keywords);
-      setDecision(updated); // ✅ Met à jour localement la version serveur
+      setDecision(updated);
       setMessage('✅ Mots-clés mis à jour');
     } catch {
       setMessage('❌ Erreur lors de la mise à jour');
@@ -86,7 +87,7 @@ const DecisionDetailPage = () => {
         onClick={() => navigate(-1)}
         className="mb-6 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
       >
-        ← Retour aux résultats
+        ← Retour
       </button>
 
       <h1 className="text-2xl font-bold mb-2">{formatDecisionTitle(decision)}</h1>
@@ -142,6 +143,17 @@ const DecisionDetailPage = () => {
           <p className="mt-2 font-semibold text-sm text-green-600">
             {message}
           </p>
+        )}
+
+        {decision.pdf_link && (
+          <a
+            href={decision.pdf_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            📄 Télécharger le fichier PDF
+          </a>
         )}
       </div>
     </>

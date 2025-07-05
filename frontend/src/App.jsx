@@ -1,4 +1,3 @@
-// src/App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
@@ -14,7 +13,7 @@ import Layout from './components/Layout';
 function App() {
   return (
     <Routes>
-      {/* Page de connexion (publique, sans layout) */}
+      {/* Page de connexion */}
       <Route
         path="/login"
         element={
@@ -33,7 +32,7 @@ function App() {
         }
       />
 
-      {/* Page d'accueil (publique) */}
+      {/* Accueil */}
       <Route
         path="/"
         element={
@@ -43,7 +42,7 @@ function App() {
         }
       />
 
-      {/* Ajout d'archive (protégé, admin uniquement) */}
+      {/* Ajout d'archive */}
       <Route
         path="/add-archive"
         element={
@@ -55,7 +54,7 @@ function App() {
         }
       />
 
-      {/* Import de décisions (protégé) */}
+      {/* Import */}
       <Route
         path="/archives"
         element={
@@ -67,7 +66,7 @@ function App() {
         }
       />
 
-      {/* Recherche de décisions (protégé) */}
+      {/* Recherche */}
       <Route
         path="/search"
         element={
@@ -79,15 +78,28 @@ function App() {
         }
       />
 
-      {/* Détail d'une décision (protégé) */}
+      {/* ✅ Route détail décision avec :id dynamique */}
       <Route
-        path="/decision/:id"
+        path="/decisions/:id"
         element={
           <PrivateRoute>
             <Layout title="Détails de la décision">
               <DecisionDetailPage />
             </Layout>
           </PrivateRoute>
+        }
+      />
+
+      {/* ✅ Route fallback pour éviter les pages blanches */}
+      <Route
+        path="*"
+        element={
+          <Layout title="Page non trouvée">
+            <div className="p-8 text-center">
+              <h1 className="text-3xl font-bold">404</h1>
+              <p>Page non trouvée</p>
+            </div>
+          </Layout>
         }
       />
     </Routes>

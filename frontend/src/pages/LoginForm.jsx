@@ -1,3 +1,4 @@
+// src/pages/LoginForm.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { apiFetch } from '../utils/apiFetch';
@@ -18,17 +19,23 @@ const LoginForm = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError(null);
+
     try {
-      const { token, email: userEmail, role } = await apiFetch('/api/login', {
+      const { token, refreshToken, email: userEmail, role } = await apiFetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
 
+      // ✅ Sauvegarde access + refresh tokens
       localStorage.setItem('token', token);
+      localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('userEmail', userEmail);
       localStorage.setItem('role', role);
+
       navigate('/');
+
     } catch (err) {
       console.error('[❌] Login error:', err);
 

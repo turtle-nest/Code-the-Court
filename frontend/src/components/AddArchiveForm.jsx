@@ -1,6 +1,8 @@
 // src/components/AddArchiveForm.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../utils/apiFetch';
 
 const AddArchiveForm = () => {
@@ -17,6 +19,7 @@ const AddArchiveForm = () => {
   const [jurisdictions, setJurisdictions] = useState([]);
   const [caseTypes, setCaseTypes] = useState([]);
 
+  const navigate = useNavigate();
   const maxSize = 5 * 1024 * 1024; // 5MB
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -36,7 +39,6 @@ const AddArchiveForm = () => {
   });
 
   useEffect(() => {
-    // ✅ Charge la liste unique depuis /api/metadata
     fetch('http://localhost:3000/api/metadata')
       .then(res => res.json())
       .then(data => {
@@ -68,21 +70,32 @@ const AddArchiveForm = () => {
     formData.append('pdf', file);
 
     try {
-      await apiFetch('/api/archives', {
+      // ✅ apiFetch renvoie déjà data => pas de .json() !
+      const data = await apiFetch('/api/archives', {
         method: 'POST',
         body: formData,
       });
 
-      const now = new Date().toLocaleString('fr-FR');
-      setMessage(`✅ Décision enregistrée le ${now}`);
+      console.log('[✅] Upload success:', data);
+
+      setMessage(`✅ Décision enregistrée avec succès`);
       setIsError(false);
 
+      if (data.decision_id) {
+        // ✅ Redirection vers la page détail
+        navigate(`/decisions/${data.decision_id}`);
+      } else {
+        console.warn('⚠️ Aucun decision_id retourné !');
+      }
+
+      // Nettoyage local
       setTitle('');
       setDate('');
       setJurisdiction('');
       setCaseType('');
       setKeywords('');
       setFile(null);
+
     } catch (err) {
       console.error('[❌] Upload error:', err);
       setMessage('❌ Une erreur est survenue');
