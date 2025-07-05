@@ -2,20 +2,20 @@
 const express = require('express');
 const router = express.Router();
 
-// Valeurs centralisées pour ton MVP
+// Codes corrects pour Judilibre
 router.get('/', (req, res) => {
   res.json({
     jurisdictions: [
-      "Cour de cassation",
-      "Cour d'appel",
-      "Tribunal judiciaire",
-      "Conseil des prud'hommes"
+      "CC",  // Cour de cassation
+      "CA",  // Cour d'appel
+      "TJ",  // Tribunal judiciaire
+      "CPH"  // Conseil des prud'hommes
     ],
     caseTypes: [
-      "Civil",
-      "Pénal",
-      "Social",
-      "Administratif"
+      "CIV",  // Civil
+      "PEN",  // Pénal
+      "SOC",  // Social
+      "ADM"   // Administratif
     ]
   });
 });

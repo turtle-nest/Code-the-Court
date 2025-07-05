@@ -1,12 +1,15 @@
-// src/utils/apiFetch.js
+// ✅ src/utils/apiFetch.js
+
 export async function apiFetch(url, options = {}) {
   const token = localStorage.getItem('token');
   const headers = new Headers(options.headers || {});
 
+  // ➜ Ajoute ton JWT SocioJustice côté frontend
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
+  // ➜ Force JSON sauf si c'est un FormData
   if (options.body && !headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
@@ -14,11 +17,13 @@ export async function apiFetch(url, options = {}) {
   const fetchOptions = {
     ...options,
     headers,
+    credentials: 'include', // ➜ optionnel : force envoi cookie si nécessaire
   };
 
   try {
     const res = await fetch(url, fetchOptions);
 
+    // Essaye de parser JSON, fallback objet vide
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {

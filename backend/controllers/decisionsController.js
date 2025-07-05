@@ -223,22 +223,30 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
       });
     }
 
-    const { startDate, endDate, jurisdiction, caseType } = req.body;
+    console.log('[DEBUG] Payload reçu:', req.body);
 
-    if (!startDate || !endDate) {
-      return next(new ApiError('startDate and endDate are required', 400));
+    const {
+      dateDecisionMin,
+      dateDecisionMax,
+      jurisdiction,
+      caseType,
+      query
+    } = req.body;
+
+    if (!dateDecisionMin || !dateDecisionMax) {
+      return next(new ApiError('dateDecisionMin and dateDecisionMax are required', 400));
     }
 
     const data = await fetchDecisionsFromJudilibre({
-      dateDecisionMin: startDate,
-      dateDecisionMax: endDate,
+      dateDecisionMin,
+      dateDecisionMax,
       jurisdiction,
-      caseType
+      caseType,
+      query
     });
 
     console.log('[DEBUG] Judilibre raw response:', data);
 
-    // ✅ Blindé pour API Judilibre : data peut être un tableau OU un objet avec results
     const count = Array.isArray(data) ? data.length : (data.results?.length || 0);
     const results = Array.isArray(data) ? data : (data.results || []);
 

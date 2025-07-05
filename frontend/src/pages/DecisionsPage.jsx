@@ -1,4 +1,5 @@
-// src/pages/DecisionsPage.jsx
+// ✅ src/pages/DecisionsPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { importFromJudilibre } from '../services/decisions';
 
@@ -39,21 +40,23 @@ function DecisionsPage() {
     setMessage(null);
 
     const payload = {
-      startDate: formData.startDate,
-      endDate: formData.endDate,
+      dateDecisionMin: formData.startDate,
+      dateDecisionMax: formData.endDate,
+      query: 'brevet' // Mot-clé de test — change ou mets '' pour tout
     };
     if (formData.jurisdiction) payload.jurisdiction = formData.jurisdiction;
     if (formData.caseType) payload.caseType = formData.caseType;
 
-    console.log('[DEBUG] Payload:', payload);
+    console.log('[DEBUG] Payload envoyé:', payload);
 
     try {
       const result = await importFromJudilibre(payload);
       console.log('[DEBUG] API response:', result);
 
-      // ✅ Utilise count ou total pour être blindé
-      const count = result.count ?? result.total ?? 0;
-      setMessage(`${count} décisions importées le ${new Date(result.timestamp).toLocaleString()}`);
+      // ✅ Prends `count` en priorité, sinon fallback total, sinon longueur brute
+      const count = result.count ?? result.total ?? (result.results?.length || 0);
+
+      setMessage(`${count} décisions importées le ${new Date().toLocaleString()}`);
     } catch (err) {
       console.error('[❌] Import error:', err);
       setError(`Une erreur est survenue : ${err.message}`);

@@ -1,4 +1,5 @@
-// src/services/decisions.js
+// ✅ src/services/decisions.js
+
 import { apiFetch } from '../utils/apiFetch';
 
 export async function getAllDecisions(params = {}) {
@@ -11,8 +12,11 @@ export async function getDecisionStats() {
 }
 
 export const importFromJudilibre = async (payload) => {
-  return await apiFetch('http://localhost:3000/api/decisions/import', {
+  return await apiFetch('/api/decisions/import', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(payload)
   });
 };
@@ -20,7 +24,9 @@ export const importFromJudilibre = async (payload) => {
 export async function updateDecisionKeywords(id, keywords) {
   return apiFetch(`/api/decisions/${id}/keywords`, {
     method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ keywords }),
   });
-}
-
+};
