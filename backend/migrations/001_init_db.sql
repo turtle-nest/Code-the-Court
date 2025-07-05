@@ -29,18 +29,17 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- ============================================
--- DECISIONS
+-- DECISIONS (sans pdf_link)
 -- ============================================
 CREATE TABLE IF NOT EXISTS decisions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  external_id UUID UNIQUE, -- ✅ UUID → fait le lien avec archive.id
+  external_id UUID UNIQUE, -- ✅ UUID → optionnel, lien vers archive.id
   title TEXT NOT NULL,
   content TEXT,
   date DATE,
   jurisdiction VARCHAR,
   case_type VARCHAR,
   source VARCHAR NOT NULL DEFAULT 'judilibre',
-  pdf_link TEXT, -- ✅ lien vers ton PDF
   public BOOLEAN DEFAULT TRUE,
   imported_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -49,7 +48,7 @@ CREATE INDEX IF NOT EXISTS decisions_index_0 ON decisions (date);
 CREATE INDEX IF NOT EXISTS decisions_index_1 ON decisions (jurisdiction);
 
 -- ============================================
--- ARCHIVES
+-- ARCHIVES (avec file_path)
 -- ============================================
 CREATE TABLE IF NOT EXISTS archives (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

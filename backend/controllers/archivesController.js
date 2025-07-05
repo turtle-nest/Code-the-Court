@@ -27,10 +27,10 @@ const createArchive = async (req, res, next) => {
   }
 
   try {
-    // ✅ Construis l'URL publique vers ton PDF uploadé
-    const pdfLink = `${process.env.BACKEND_URL || 'http://localhost:3000'}/${file.path}`;
+    // ✅ URL publique vers ton PDF uploadé
+    const pdfPublicUrl = `${process.env.BACKEND_URL || 'http://localhost:3000'}/${file.path}`;
 
-    // ✅ 1) Insère l'archive
+    // ✅ 1) Insère l'archive dans `archives` SEULEMENT
     const archiveResult = await db.query(
       `
       INSERT INTO archives (title, content, date, jurisdiction, location, user_id, file_path)
@@ -42,37 +42,13 @@ const createArchive = async (req, res, next) => {
 
     const archive = archiveResult.rows[0];
 
-    // ✅ 2) Insère la décision reliée avec external_id = archive.id
-    // et stocke bien le pdf_link
-    const decisionResult = await db.query(
-      `
-      INSERT INTO decisions (external_id, title, content, date, jurisdiction, source, pdf_link)
-      VALUES ($1, $2, $3, $4, $5, 'archive', $6)
-      RETURNING id, pdf_link;
-      `,
-      [
-        archive.id,
-        archive.title,
-        archive.content,
-        archive.date,
-        archive.jurisdiction,
-        pdfLink
-      ]
-    );
+    console.log(`✅ New archive created with ID: ${archive.id}`);
+    console.log(`✅ PDF accessible at: ${pdfPublicUrl}`);
 
-    const decisionId = decisionResult.rows[0].id;
-    const savedPdfLink = decisionResult.rows[0].pdf_link;
-
-    // ✅ Vérifie et log pour debug
-    console.log(`✅ New decision ID: ${decisionId}`);
-    console.log(`✅ PDF link saved: ${savedPdfLink}`);
-
-    // ✅ 3) Retourne au frontend le bon ID pour redirection
     res.status(201).json({
-      message: '✅ Archive créée et décision liée.',
+      message: '✅ Archive créée.',
       archive_id: archive.id,
-      decision_id: decisionId,
-      pdf_link: savedPdfLink
+      pdf_link: pdfPublicUrl
     });
 
   } catch (error) {
