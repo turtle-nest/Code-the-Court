@@ -1,9 +1,9 @@
 // backend/controllers/decisionsController.js
 const db = require('../config/db');
-const ApiError = require('../utils/apiError');
 const { fetchDecisionsFromJudilibre } = require('../services/judilibreService');
-const fs = require('fs');
+const ApiError = require('../utils/apiError');
 const path = require('path');
+const fs = require('fs');
 
 /**
  * PUT /api/decisions/:id/keywords
@@ -208,7 +208,7 @@ const getAllDecisions = async (req, res, next) => {
 };
 
 /**
- * GET /api/decisions/import
+ * POST /api/decisions/import
  */
 const importDecisionsFromJudilibre = async (req, res, next) => {
   try {
@@ -216,13 +216,37 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
       const mockPath = path.join(__dirname, '../mock/mock_decisions.json');
       const raw = fs.readFileSync(mockPath, 'utf-8');
       const mockData = JSON.parse(raw);
-      return res.status(200).json(mockData);
+      return res.status(200).json({
+        count: mockData.length,
+        timestamp: new Date().toISOString(),
+        results: mockData
+      });
     }
 
-    const { q, dateDecisionMin, dateDecisionMax, page } = req.query;
-    const data = await fetchDecisionsFromJudilibre({ q, dateDecisionMin, dateDecisionMax, page });
+    const { startDate, endDate, jurisdiction, caseType } = req.body;
 
-    res.status(200).json(data);
+    if (!startDate || !endDate) {
+      return next(new ApiError('startDate and endDate are required', 400));
+    }
+
+    const data = await fetchDecisionsFromJudilibre({
+      dateDecisionMin: startDate,
+      dateDecisionMax: endDate,
+      jurisdiction,
+      caseType
+    });
+
+    console.log('[DEBUG] Judilibre raw response:', data);
+
+    // ✅ Blindé pour API Judilibre : data peut être un tableau OU un objet avec results
+    const count = Array.isArray(data) ? data.length : (data.results?.length || 0);
+    const results = Array.isArray(data) ? data : (data.results || []);
+
+    res.status(200).json({
+      count,
+      timestamp: new Date().toISOString(),
+      results
+    });
   } catch (error) {
     console.error('❌ Error importing decisions from Judilibre:', error);
     next(new ApiError('Failed to import from Judilibre', 500));
@@ -306,6 +330,13 @@ const getCaseTypes = async (req, res, next) => {
  */
 const getDecisionById = async (req, res, next) => {
   const { id } = req.params;
+
+  // ✅ Vérifie UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    return next(new ApiError(`Invalid UUID format for id: ${id}`, 400));
+  }
+
   try {
     const { rows } = await db.query(
       `

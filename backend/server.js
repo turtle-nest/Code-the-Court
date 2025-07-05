@@ -1,3 +1,4 @@
+// backend/server.js
 require('dotenv').config();
 
 const path = require('path');
@@ -9,26 +10,25 @@ const errorHandler = require('./middlewares/errorHandler');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ CORS
+// ✅ Middleware CORS
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
 
-// ✅ Serve statically the uploads folder for PDF links
+// ✅ Sert les fichiers PDF
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ✅ Body parser for URL-encoded forms (e.g., classic HTML forms)
+// ✅ Body parser pour formulaires HTML classiques
 app.use(express.urlencoded({ extended: true }));
 
-// ⚠️ IMPORTANT : Pour les requêtes JSON => .json() après Multer
-// On monte les routes qui utilisent FormData avant express.json()
+// ⚠️ IMPORTANT : routes qui utilisent FormData avant express.json()
 app.use('/api/archives', require('./routes/archives'));
 
-// ✅ JSON Body parser pour les autres routes
+// ✅ Body parser JSON pour le reste
 app.use(express.json());
 
-// ✅ Autres routes API
+// ✅ Toutes tes routes API
 app.use('/api/decisions', require('./routes/decisions'));
 app.use('/api', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
@@ -41,10 +41,10 @@ app.get('/', (req, res) => {
   res.send('SocioJustice API is running!');
 });
 
-// ✅ Error handler (toujours à la fin)
+// ✅ Gestion des erreurs
 app.use(errorHandler);
 
-// ✅ Test connexion DB et démarrage du serveur
+// ✅ Test DB et démarrage
 if (require.main === module) {
   db.query('SELECT NOW()')
     .then(res => console.log('📅 DB Time:', res.rows[0].now))

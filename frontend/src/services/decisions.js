@@ -10,9 +10,12 @@ export async function getDecisionStats() {
   return apiFetch('/api/decisions/stats');
 }
 
-export async function importFromJudilibre() {
-  return apiFetch('/api/decisions/import');
-}
+export const importFromJudilibre = async (payload) => {
+  return await apiFetch('http://localhost:3000/api/decisions/import', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+};
 
 export async function updateDecisionKeywords(id, keywords) {
   return apiFetch(`/api/decisions/${id}/keywords`, {

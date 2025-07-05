@@ -18,32 +18,33 @@ const {
 
 const { validateDecisionsQuery } = require('../middlewares/validateInput');
 
+// ✅ Routes fixes AVANT les dynamiques
 router.get('/', validateDecisionsQuery, getAllDecisions);
-router.get('/import', importDecisionsFromJudilibre);
+router.post('/import', importDecisionsFromJudilibre);
 
-// MOCK route
 router.get('/import/mock', (req, res, next) => {
   const filePath = path.join(__dirname, '../mock/mock_decisions.json');
-
   fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-      return next(new ApiError('Failed to load mock decisions', 500));
-    }
-
+    if (err) return next(new ApiError('Failed to load mock decisions', 500));
     try {
       const decisions = JSON.parse(data);
-      res.status(200).json(decisions);
+      res.status(200).json({
+        count: decisions.length,
+        timestamp: new Date().toISOString(),
+        results: decisions
+      });
     } catch (parseError) {
       return next(new ApiError('Invalid mock data format', 500));
     }
   });
 });
 
-// Aux routes
 router.get('/stats', getDecisionsStats);
 router.get('/juridictions', getJurisdictions);
 router.get('/case-types', getCaseTypes);
-router.get('/:id', getDecisionById);
+
+// ✅ Routes dynamiques TOUT À LA FIN
 router.put('/:id/keywords', authMiddleware, updateDecisionKeywords);
+router.get('/:id', getDecisionById);
 
 module.exports = router;

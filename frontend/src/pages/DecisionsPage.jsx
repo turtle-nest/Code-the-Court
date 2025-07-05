@@ -17,7 +17,6 @@ function DecisionsPage() {
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
-  // ✅ Récupère les options depuis /api/metadata
   useEffect(() => {
     fetch('http://localhost:3000/api/metadata')
       .then(res => res.json())
@@ -25,7 +24,7 @@ function DecisionsPage() {
         setJurisdictions(data.jurisdictions || []);
         setCaseTypes(data.caseTypes || []);
       })
-      .catch(console.error);
+      .catch(err => console.error('[❌] Metadata fetch error:', err));
   }, []);
 
   const handleChange = e => {
@@ -38,9 +37,23 @@ function DecisionsPage() {
     setLoading(true);
     setError(null);
     setMessage(null);
+
+    const payload = {
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+    };
+    if (formData.jurisdiction) payload.jurisdiction = formData.jurisdiction;
+    if (formData.caseType) payload.caseType = formData.caseType;
+
+    console.log('[DEBUG] Payload:', payload);
+
     try {
-      const result = await importFromJudilibre(formData);
-      setMessage(`${result.count} décisions importées le ${result.timestamp}`);
+      const result = await importFromJudilibre(payload);
+      console.log('[DEBUG] API response:', result);
+
+      // ✅ Utilise count ou total pour être blindé
+      const count = result.count ?? result.total ?? 0;
+      setMessage(`${count} décisions importées le ${new Date(result.timestamp).toLocaleString()}`);
     } catch (err) {
       console.error('[❌] Import error:', err);
       setError(`Une erreur est survenue : ${err.message}`);
@@ -71,9 +84,8 @@ function DecisionsPage() {
               value={formData.jurisdiction}
               onChange={handleChange}
               className="w-full border rounded px-3 py-2"
-              required
             >
-              <option value="">-- Choisir --</option>
+              <option value="">-- Choisir (optionnel) --</option>
               {jurisdictions.map(j => (
                 <option key={j} value={j}>{j}</option>
               ))}
@@ -87,9 +99,8 @@ function DecisionsPage() {
               value={formData.caseType}
               onChange={handleChange}
               className="w-full border rounded px-3 py-2"
-              required
             >
-              <option value="">-- Choisir --</option>
+              <option value="">-- Choisir (optionnel) --</option>
               {caseTypes.map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
@@ -104,6 +115,7 @@ function DecisionsPage() {
               value={formData.startDate}
               onChange={handleChange}
               className="w-full border rounded px-3 py-2"
+              required
             />
           </div>
 
@@ -115,6 +127,7 @@ function DecisionsPage() {
               value={formData.endDate}
               onChange={handleChange}
               className="w-full border rounded px-3 py-2"
+              required
             />
           </div>
 
