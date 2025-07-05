@@ -29,11 +29,12 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- ============================================
--- DECISIONS (corrigé : external_id en TEXT)
+-- DECISIONS (corrigé)
 -- ============================================
 CREATE TABLE IF NOT EXISTS decisions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  external_id TEXT UNIQUE,  -- ✅ CORRECTIF : UUID remplacé par TEXT pour accepter tout ID externe
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- ID interne UUID
+  external_id TEXT UNIQUE,                       -- ✅ ID Judilibre → TEXT car pas toujours UUID
+  ecli TEXT UNIQUE,                              -- ✅ Pour fallback recherche textuelle
   title TEXT NOT NULL,
   content TEXT,
   date DATE,
@@ -46,9 +47,10 @@ CREATE TABLE IF NOT EXISTS decisions (
 
 CREATE INDEX IF NOT EXISTS decisions_index_0 ON decisions (date);
 CREATE INDEX IF NOT EXISTS decisions_index_1 ON decisions (jurisdiction);
+CREATE INDEX IF NOT EXISTS decisions_index_2 ON decisions (ecli);
 
 -- ============================================
--- ARCHIVES (avec file_path)
+-- ARCHIVES
 -- ============================================
 CREATE TABLE IF NOT EXISTS archives (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -1,4 +1,5 @@
 // backend/controllers/decisionsController.js
+
 const db = require('../config/db');
 const { fetchDecisionsFromJudilibre } = require('../services/judilibreService');
 const ApiError = require('../utils/apiError');
@@ -7,7 +8,6 @@ const fs = require('fs');
 
 /**
  * PUT /api/decisions/:id/keywords
- * Met à jour les mots-clés pour une décision
  */
 const updateDecisionKeywords = async (req, res, next) => {
   const { id } = req.params;
@@ -18,18 +18,13 @@ const updateDecisionKeywords = async (req, res, next) => {
   }
 
   try {
-    // 1) Supprimer les liens existants
     await db.query('DELETE FROM decision_tags WHERE decision_id = $1', [id]);
 
     for (const kw of keywords) {
       const label = kw.trim();
       if (!label) continue;
 
-      // Vérifier si le tag existe déjà
-      const { rows } = await db.query(
-        'SELECT id FROM tags WHERE label = $1',
-        [label]
-      );
+      const { rows } = await db.query('SELECT id FROM tags WHERE label = $1', [label]);
 
       let tagId;
       if (rows.length > 0) {
@@ -48,18 +43,10 @@ const updateDecisionKeywords = async (req, res, next) => {
       );
     }
 
-    // 2) Retourner la décision mise à jour avec ses mots-clés
     const { rows: updated } = await db.query(
       `
       SELECT 
-        d.id,
-        d.title,
-        d.content,
-        d.date,
-        d.jurisdiction,
-        d.case_type,
-        d.source,
-        d.public,
+        d.id, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.public,
         COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
       FROM decisions d
       LEFT JOIN decision_tags dt ON dt.decision_id = d.id
@@ -70,9 +57,7 @@ const updateDecisionKeywords = async (req, res, next) => {
       [id]
     );
 
-    if (updated.length === 0) {
-      return next(new ApiError('Decision not found', 404));
-    }
+    if (updated.length === 0) return next(new ApiError('Decision not found', 404));
 
     res.status(200).json(updated[0]);
   } catch (error) {
@@ -83,7 +68,6 @@ const updateDecisionKeywords = async (req, res, next) => {
 
 /**
  * GET /api/decisions
- * Liste toutes les décisions avec pagination et tri
  */
 const getAllDecisions = async (req, res, next) => {
   try {
@@ -95,24 +79,13 @@ const getAllDecisions = async (req, res, next) => {
     const pageInt = parseInt(page);
     const limitInt = parseInt(limit) || 10;
 
-    if (isNaN(pageInt) || pageInt < 1) {
-      return next(new ApiError('Invalid page number', 400));
-    }
-
-    if (isNaN(limitInt) || limitInt < 1 || limitInt > 10) {
-      return next(new ApiError('Invalid limit', 400));
-    }
+    if (isNaN(pageInt) || pageInt < 1) return next(new ApiError('Invalid page number', 400));
+    if (isNaN(limitInt) || limitInt < 1 || limitInt > 50) return next(new ApiError('Invalid limit', 400));
 
     const allowedSortBy = ['date', 'jurisdiction', 'case_type'];
     const allowedOrder = ['asc', 'desc'];
-
-    if (!allowedSortBy.includes(sortBy)) {
-      return next(new ApiError('Invalid sortBy field', 400));
-    }
-
-    if (!allowedOrder.includes(order.toLowerCase())) {
-      return next(new ApiError('Invalid order', 400));
-    }
+    if (!allowedSortBy.includes(sortBy)) return next(new ApiError('Invalid sortBy field', 400));
+    if (!allowedOrder.includes(order.toLowerCase())) return next(new ApiError('Invalid order', 400));
 
     const offset = (pageInt - 1) * limitInt;
 
@@ -122,28 +95,12 @@ const getAllDecisions = async (req, res, next) => {
       LEFT JOIN tags t ON t.id = dt.tag_id
       WHERE 1=1
     `;
-
     const filters = [];
-    if (date) {
-      filters.push(date);
-      baseQuery += ` AND d.date = $${filters.length}`;
-    }
-    if (start_date) {
-      filters.push(start_date);
-      baseQuery += ` AND d.date >= $${filters.length}`;
-    }
-    if (end_date) {
-      filters.push(end_date);
-      baseQuery += ` AND d.date <= $${filters.length}`;
-    }
-    if (juridiction) {
-      filters.push(`%${juridiction}%`);
-      baseQuery += ` AND d.jurisdiction ILIKE $${filters.length}`;
-    }
-    if (type_affaire) {
-      filters.push(`%${type_affaire}%`);
-      baseQuery += ` AND d.case_type ILIKE $${filters.length}`;
-    }
+    if (date) { filters.push(date); baseQuery += ` AND d.date = $${filters.length}`; }
+    if (start_date) { filters.push(start_date); baseQuery += ` AND d.date >= $${filters.length}`; }
+    if (end_date) { filters.push(end_date); baseQuery += ` AND d.date <= $${filters.length}`; }
+    if (juridiction) { filters.push(`%${juridiction}%`); baseQuery += ` AND d.jurisdiction ILIKE $${filters.length}`; }
+    if (type_affaire) { filters.push(`%${type_affaire}%`); baseQuery += ` AND d.case_type ILIKE $${filters.length}`; }
     if (keyword) {
       filters.push(`%${keyword}%`);
       baseQuery += `
@@ -166,41 +123,22 @@ const getAllDecisions = async (req, res, next) => {
       }
     }
 
-    // ✅ Requête COUNT pour le total
-    const countQuery = `
-      SELECT COUNT(DISTINCT d.id) AS totalCount
-      ${baseQuery};
-    `;
+    const countQuery = `SELECT COUNT(DISTINCT d.id) AS totalCount ${baseQuery};`;
     const countResult = await db.query(countQuery, filters);
     const totalCount = parseInt(countResult.rows[0].totalcount) || 0;
 
-    // ✅ Requête résultats paginés
     const dataQuery = `
-      SELECT 
-        d.id, 
-        d.external_id,
-        d.title,
-        d.content,
-        d.date,
-        d.jurisdiction,
-        d.case_type,
-        d.source,
-        d.public,
+      SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.public,
         COALESCE(json_agg(t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
       ${baseQuery}
       GROUP BY d.id
       ORDER BY d.${sortBy} ${order.toUpperCase()}
       LIMIT $${filters.length + 1} OFFSET $${filters.length + 2};
     `;
-
     const dataValues = [...filters, limitInt, offset];
     const result = await db.query(dataQuery, dataValues);
 
-    res.status(200).json({
-      results: result.rows,
-      totalCount
-    });
-
+    res.status(200).json({ results: result.rows, totalCount });
   } catch (error) {
     console.error('❌ Error fetching decisions:', error);
     next(new ApiError('Internal server error', 500));
@@ -223,8 +161,6 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
       });
     }
 
-    console.log('[DEBUG] Payload reçu:', req.body);
-
     const {
       dateDecisionMin,
       dateDecisionMax,
@@ -245,35 +181,37 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
       query
     });
 
-    console.log('[DEBUG] Judilibre raw response:', data);
-
     const results = Array.isArray(data) ? data : (data.results || []);
     let inserted = 0;
 
-    // ✅ INSÉRER dans la DB
+    const buildJudilibreTitle = (decision) => {
+      const parts = [];
+      if (decision.number) parts.push(`Pourvoi n° ${decision.number}`);
+      if (decision.solution) parts.push(`Solution : ${decision.solution}`);
+      if (decision.ecli) parts.push(`ECLI: ${decision.ecli}`);
+      return parts.join(' - ').slice(0, 200).trim() || 'Sans titre';
+    };
+
     for (const decision of results) {
-      const {
-        id, // Judilibre id
-        title,
-        decision_date,
-        jurisdiction,
-        type,
-        body
-      } = decision;
+      const { id, ecli, decision_date, jurisdiction, type } = decision;
+
+      const title = buildJudilibreTitle(decision);
+      const content = decision.summary || decision.text || (decision.zones ? Object.values(decision.zones).join('\n\n') : '');
 
       const insertQuery = `
         INSERT INTO decisions
-          (external_id, title, content, date, jurisdiction, case_type, source, public, imported_at)
+          (external_id, ecli, title, content, date, jurisdiction, case_type, source, public, imported_at)
         VALUES
-          ($1, $2, $3, $4, $5, $6, 'judilibre', true, NOW())
+          ($1, $2, $3, $4, $5, $6, $7, 'judilibre', true, NOW())
         ON CONFLICT (external_id) DO NOTHING
         RETURNING id;
       `;
 
       const values = [
         id || null,
-        title || 'Sans titre',
-        body || '',
+        ecli || null,
+        title,
+        content,
         decision_date || null,
         jurisdiction || '',
         type || ''
@@ -283,57 +221,16 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
       if (rowCount > 0) inserted++;
     }
 
-    console.log(`[DEBUG] Nombre de décisions insérées en DB : ${inserted}`);
-
     res.status(200).json({
       imported: inserted,
       fetched: results.length,
       timestamp: new Date().toISOString(),
       results
     });
+
   } catch (error) {
     console.error('❌ Error importing decisions from Judilibre:', error);
     next(new ApiError('Failed to import from Judilibre', 500));
-  }
-};
-
-/**
- * GET /api/decisions/stats
- */
-const getDecisionsStats = async (req, res, next) => {
-  try {
-    const { rows: totalRows } = await db.query(`
-      SELECT 
-        COUNT(*) FILTER (WHERE source = 'judilibre')::int AS judilibre,
-        COUNT(*) FILTER (WHERE source = 'archive')::int AS archive,
-        COUNT(*)::int AS total
-      FROM decisions
-    `);
-
-    const { rows: lastImportRows } = await db.query(`
-      SELECT 
-        COUNT(*)::int AS count,
-        MAX(date)::date AS date
-      FROM decisions
-      WHERE imported_at IS NOT NULL AND imported_at = (
-        SELECT MAX(imported_at) FROM decisions WHERE imported_at IS NOT NULL
-      )
-    `);
-
-    const stats = {
-      total: totalRows[0]?.total || 0,
-      archive: totalRows[0]?.archive || 0,
-      judilibre: totalRows[0]?.judilibre || 0,
-      lastImport: {
-        count: lastImportRows[0]?.count || 0,
-        date: lastImportRows[0]?.date || null
-      }
-    };
-
-    res.status(200).json(stats);
-  } catch (error) {
-    console.error('❌ Error fetching stats:', error);
-    next(new ApiError('Failed to fetch stats', 500));
   }
 };
 
@@ -370,43 +267,71 @@ const getCaseTypes = async (req, res, next) => {
 };
 
 /**
+ * GET /api/decisions/stats
+ */
+const getDecisionsStats = async (req, res, next) => {
+  try {
+    const { rows: totalRows } = await db.query(`
+      SELECT 
+        COUNT(*) FILTER (WHERE source = 'judilibre')::int AS judilibre,
+        COUNT(*) FILTER (WHERE source = 'archive')::int AS archive,
+        COUNT(*)::int AS total
+      FROM decisions
+    `);
+
+    const stats = {
+      total: totalRows[0]?.total || 0,
+      archive: totalRows[0]?.archive || 0,
+      judilibre: totalRows[0]?.judilibre || 0
+    };
+
+    res.status(200).json(stats);
+  } catch (error) {
+    console.error('❌ Error fetching stats:', error);
+    next(new ApiError('Failed to fetch stats', 500));
+  }
+};
+
+/**
  * GET /api/decisions/:id
- * Récupère une décision par ID OU external_id
  */
 const getDecisionById = async (req, res, next) => {
   const { id } = req.params;
-
-  // Vérifie UUID valide
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(id)) {
-    return next(new ApiError(`Invalid UUID format for id: ${id}`, 400));
-  }
 
   try {
-    const { rows } = await db.query(
-      `
-      SELECT 
-        d.id,
-        d.external_id,
-        d.title,
-        d.content,
-        d.date,
-        d.jurisdiction,
-        d.case_type,
-        d.source,
-        d.pdf_link,
-        COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
-      FROM decisions d
-      LEFT JOIN decision_tags dt ON dt.decision_id = d.id
-      LEFT JOIN tags t ON t.id = dt.tag_id
-      WHERE d.id = $1 OR d.external_id = $1
-      GROUP BY d.id;
-      `,
-      [id]
-    );
+    let rows;
+
+    if (uuidRegex.test(id)) {
+      const result = await db.query(
+        `
+        SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source,
+          COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
+        FROM decisions d
+        LEFT JOIN decision_tags dt ON dt.decision_id = d.id
+        LEFT JOIN tags t ON t.id = dt.tag_id
+        WHERE d.id = $1::uuid OR d.external_id = $1
+        GROUP BY d.id;`,
+        [id]
+      );
+      rows = result.rows;
+    } else {
+      const result = await db.query(
+        `
+        SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source,
+          COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
+        FROM decisions d
+        LEFT JOIN decision_tags dt ON dt.decision_id = d.id
+        LEFT JOIN tags t ON t.id = dt.tag_id
+        WHERE d.ecli = $1
+        GROUP BY d.id;`,
+        [id]
+      );
+      rows = result.rows;
+    }
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: `Decision not found for id or external_id ${id}` });
+      return res.status(404).json({ message: `Decision not found for ${id}` });
     }
 
     res.status(200).json(rows[0]);
@@ -420,8 +345,8 @@ module.exports = {
   getAllDecisions,
   getDecisionById,
   importDecisionsFromJudilibre,
-  getDecisionsStats,
-  getJurisdictions,
-  getCaseTypes,
   updateDecisionKeywords,
+  getDecisionsStats,
+  getJurisdictions: getJurisdictions,
+  getCaseTypes: getCaseTypes
 };

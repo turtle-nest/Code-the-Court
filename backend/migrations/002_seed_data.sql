@@ -23,22 +23,6 @@ WITH new_archive AS (
   )
   RETURNING id
 )
-INSERT INTO decisions (external_id, title, content, date, jurisdiction, source)
-SELECT
-  id,
-  'Arrêt Cour de cassation - Contrat de travail',
-  'Exemple de contenu décision sur contrat de travail.',
-  '2024-01-10',
-  'Cour de cassation',
-  'archive'
-FROM new_archive;
-
--- ============================================
--- 📚 Insert test decision sans archive (Judilibre)
--- ============================================
-INSERT INTO decisions (external_id, title, content, date, jurisdiction, source)
-VALUES
-  (gen_random_uuid(), 'Arrêt Cour d''appel Lyon - Droit public', 'Exemple de contenu décision droit public.', '2024-01-15', 'Cour d''appel Lyon', 'judilibre');
 
 -- ============================================
 -- 📚 Insert test tags

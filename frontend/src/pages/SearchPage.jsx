@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import SearchForm from '../components/SearchForm';
 import Pagination from '../components/Pagination';
-import { formatDecisionTitle } from '../utils/formatTitle';
+import { formatDecisionTitle } from '../utils/formatLabels';
 
 const SearchPage = () => {
   const [results, setResults] = useState([]);
