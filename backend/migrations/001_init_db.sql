@@ -29,11 +29,11 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- ============================================
--- DECISIONS (sans pdf_link)
+-- DECISIONS (corrigé : external_id en TEXT)
 -- ============================================
 CREATE TABLE IF NOT EXISTS decisions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  external_id UUID UNIQUE, -- ✅ UUID → optionnel, lien vers archive.id
+  external_id TEXT UNIQUE,  -- ✅ CORRECTIF : UUID remplacé par TEXT pour accepter tout ID externe
   title TEXT NOT NULL,
   content TEXT,
   date DATE,

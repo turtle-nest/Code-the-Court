@@ -247,11 +247,47 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
 
     console.log('[DEBUG] Judilibre raw response:', data);
 
-    const count = Array.isArray(data) ? data.length : (data.results?.length || 0);
     const results = Array.isArray(data) ? data : (data.results || []);
+    let inserted = 0;
+
+    // ✅ INSÉRER dans la DB
+    for (const decision of results) {
+      const {
+        id, // Judilibre id
+        title,
+        decision_date,
+        jurisdiction,
+        type,
+        body
+      } = decision;
+
+      const insertQuery = `
+        INSERT INTO decisions
+          (external_id, title, content, date, jurisdiction, case_type, source, public, imported_at)
+        VALUES
+          ($1, $2, $3, $4, $5, $6, 'judilibre', true, NOW())
+        ON CONFLICT (external_id) DO NOTHING
+        RETURNING id;
+      `;
+
+      const values = [
+        id || null,
+        title || 'Sans titre',
+        body || '',
+        decision_date || null,
+        jurisdiction || '',
+        type || ''
+      ];
+
+      const { rowCount } = await db.query(insertQuery, values);
+      if (rowCount > 0) inserted++;
+    }
+
+    console.log(`[DEBUG] Nombre de décisions insérées en DB : ${inserted}`);
 
     res.status(200).json({
-      count,
+      imported: inserted,
+      fetched: results.length,
       timestamp: new Date().toISOString(),
       results
     });
