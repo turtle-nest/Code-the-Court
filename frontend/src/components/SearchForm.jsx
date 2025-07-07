@@ -1,8 +1,13 @@
-// src/components/SearchForm.jsx
-import React, { useState, useEffect } from 'react';
+// ✅ src/components/SearchForm.jsx
+import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { readableJurisdiction, readableCaseType } from '../config/judilibreConfig'; // ✅ Nouveau chemin !
 
-export default function SearchForm({ onSearch }) {
+export default function SearchForm({
+  onSearch,
+  jurisdictions,
+  caseTypes
+}) {
   const [searchParams] = useSearchParams();
 
   const [dateStart, setDateStart] = useState(searchParams.get('startDate') || '');
@@ -11,19 +16,6 @@ export default function SearchForm({ onSearch }) {
   const [typeAffaire, setTypeAffaire] = useState(searchParams.get('type_affaire') || '');
   const [keyword, setKeyword] = useState(searchParams.get('keywords') || '');
   const [source, setSource] = useState(searchParams.getAll('source') || []);
-
-  const [jurisdictions, setJurisdictions] = useState([]);
-  const [caseTypes, setCaseTypes] = useState([]);
-
-  useEffect(() => {
-    fetch('http://localhost:3000/api/metadata')
-      .then(res => res.json())
-      .then(data => {
-        setJurisdictions(data.jurisdictions || []);
-        setCaseTypes(data.caseTypes || []);
-      })
-      .catch(console.error);
-  }, []);
 
   const handleSourceChange = (e) => {
     const { value, checked } = e.target;
@@ -67,7 +59,9 @@ export default function SearchForm({ onSearch }) {
         >
           <option value="">-- Juridiction --</option>
           {jurisdictions.map(j => (
-            <option key={j} value={j}>{j}</option>
+            <option key={j} value={j}>
+              {readableJurisdiction(j)}
+            </option>
           ))}
         </select>
 
@@ -78,7 +72,9 @@ export default function SearchForm({ onSearch }) {
         >
           <option value="">-- Type d'affaire --</option>
           {caseTypes.map(t => (
-            <option key={t} value={t}>{t}</option>
+            <option key={t} value={t}>
+              {readableCaseType(t)}
+            </option>
           ))}
         </select>
 
@@ -133,6 +129,10 @@ export default function SearchForm({ onSearch }) {
       >
         Lancer la recherche
       </button>
+
+      <p className="text-xs text-gray-500 italic mt-2">
+        🔍 Filtrage basé sur les métadonnées officielles Judilibre.
+      </p>
     </form>
   );
 }

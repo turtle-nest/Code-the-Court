@@ -1,8 +1,10 @@
 // src/pages/DecisionDetailPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { readableJurisdiction, readableCaseType } from '../utils/formatLabels';
+import {
+  readableJurisdiction,
+  readableCaseType
+} from '../config/judilibreConfig'; // ✅ Nouveau chemin !
 import { updateDecisionKeywords } from '../services/decisions';
 
 const DecisionDetailPage = () => {

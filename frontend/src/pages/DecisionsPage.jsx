@@ -1,13 +1,15 @@
 // src/pages/DecisionsPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { importFromJudilibre } from '../services/decisions';
 import {
+  fetchJudilibreConfig,
+  getJurisdictions,
+  getCaseTypes,
   readableJurisdiction,
   readableCaseType,
   formatDecisionTitle
-} from '../utils/formatLabels';
+} from '../config/judilibreConfig'; // ✅ utilise ton module unique
 
 function DecisionsPage() {
   const [formData, setFormData] = useState({
@@ -26,15 +28,15 @@ function DecisionsPage() {
   const [decisions, setDecisions] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/metadata')
-      .then(res => res.json())
-      .then(data => {
-        setJurisdictions(data.jurisdictions || []);
-        setCaseTypes(data.caseTypes || []);
-      })
-      .catch(err => console.error('[❌] Metadata fetch error:', err));
+    // ✅ Charge la config Judilibre avant d’afficher les filtres
+    async function initConfig() {
+      await fetchJudilibreConfig();
+      setJurisdictions(getJurisdictions());
+      setCaseTypes(getCaseTypes());
+    }
+    initConfig();
 
-    // Charger déjà les décisions existantes
+    // ✅ Charger déjà les décisions existantes
     fetch('http://localhost:3000/api/decisions?source=judilibre&limit=20')
       .then(res => res.json())
       .then(data => {
@@ -68,7 +70,7 @@ function DecisionsPage() {
       const count = result.count ?? result.total ?? (result.results?.length || 0);
       setMessage(`${count} décisions importées le ${new Date().toLocaleString()}`);
 
-      // Recharge la liste
+      // ✅ Recharge la liste
       const res = await fetch('http://localhost:3000/api/decisions?source=judilibre&limit=20');
       const data = await res.json();
       console.log('🎯 Refreshed decisions:', data.results);
@@ -103,7 +105,9 @@ function DecisionsPage() {
           >
             <option value="">-- Choisir (optionnel) --</option>
             {jurisdictions.map(j => (
-              <option key={j} value={j}>{j}</option>
+              <option key={j} value={j}>
+                {readableJurisdiction(j)}
+              </option>
             ))}
           </select>
         </div>
@@ -118,7 +122,9 @@ function DecisionsPage() {
           >
             <option value="">-- Choisir (optionnel) --</option>
             {caseTypes.map(t => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {readableCaseType(t)}
+              </option>
             ))}
           </select>
         </div>
@@ -166,7 +172,10 @@ function DecisionsPage() {
         ) : (
           <div className="space-y-4">
             {decisions.map(decision => (
-              <div key={decision.id} className="border rounded p-4 bg-white shadow flex justify-between items-center">
+              <div
+                key={decision.id}
+                className="border rounded p-4 bg-white shadow flex justify-between items-center"
+              >
                 {console.log('🎯 Decision render:', decision)}
                 <div>
                   <h3 className="font-bold">{formatDecisionTitle(decision)}</h3>

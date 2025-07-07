@@ -1,9 +1,16 @@
-// src/pages/SearchPage.jsx
+// ✅ src/pages/SearchPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import SearchForm from '../components/SearchForm';
 import Pagination from '../components/Pagination';
-import { formatDecisionTitle } from '../utils/formatLabels';
+
+// ✅ Import corrigé : tout vient de judilibreConfig !
+import {
+  fetchJudilibreConfig,
+  getJurisdictions,
+  getCaseTypes,
+  formatDecisionTitle // 🔑 tu l'as ici maintenant !
+} from '../config/judilibreConfig';
 
 const SearchPage = () => {
   const [results, setResults] = useState([]);
@@ -13,6 +20,9 @@ const SearchPage = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const [jurisdictions, setJurisdictions] = useState([]);
+  const [caseTypes, setCaseTypes] = useState([]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '—';
@@ -60,6 +70,15 @@ const SearchPage = () => {
   };
 
   useEffect(() => {
+    async function initConfig() {
+      await fetchJudilibreConfig();
+      setJurisdictions(getJurisdictions());
+      setCaseTypes(getCaseTypes());
+    }
+    initConfig();
+  }, []);
+
+  useEffect(() => {
     const params = Object.fromEntries([...searchParams]);
     if (Object.keys(params).length > 0) {
       if (!params.page) params.page = 1;
@@ -83,7 +102,11 @@ const SearchPage = () => {
   return (
     <div className="flex h-screen">
       <main className="flex-1 p-8">
-        <SearchForm onSearch={handleSearch} />
+        <SearchForm
+          onSearch={handleSearch}
+          jurisdictions={jurisdictions}
+          caseTypes={caseTypes}
+        />
 
         {loading && <p className="mt-4 italic text-gray-600">⏳ Recherche en cours...</p>}
 
