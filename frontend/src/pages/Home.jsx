@@ -5,17 +5,19 @@ import { apiFetch } from '../utils/apiFetch';
 
 const Home = () => {
   const [totalDecisions, setTotalDecisions] = useState(0);
-  const [lastImportCount, setLastImportCount] = useState(0);
-  const [lastImportDate, setLastImportDate] = useState('');
+  const [totalArchives, setTotalArchives] = useState(0);
+  const [lastImportCount, setLastImportCount] = useState(0); // ✅ ajouté
+  const [lastImportDate, setLastImportDate] = useState('');  // ✅ ajouté
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    apiFetch('/api/decisions/stats')
+    apiFetch('/api/stats')
       .then((data) => {
-        setTotalDecisions(data.total || 0);
-        setLastImportCount(data.lastImport.count || 0);
-        setLastImportDate(data.lastImport.date || '');
+        setTotalDecisions(data.decisions_count || 0);
+        setTotalArchives(data.archives_count || 0);
+        setLastImportCount(data.lastImportCount || 0);  // ✅ sécurisé
+        setLastImportDate(data.lastImportDate || '');   // ✅ sécurisé
         setLoading(false);
       })
       .catch((err) => {
@@ -40,6 +42,7 @@ const Home = () => {
         <div className="mb-10">
           <Stat
             totalDecisions={totalDecisions}
+            totalArchives={totalArchives}
             lastImportCount={lastImportCount}
             lastImportDate={lastImportDate}
           />

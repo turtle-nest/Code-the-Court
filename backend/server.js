@@ -32,6 +32,7 @@ app.use(express.json());
 app.use('/api/decisions', require('./routes/decisions'));
 app.use('/api', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/stats', require('./routes/stats'));
 app.use('/api/notes', require('./routes/notes'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/metadata', require('./routes/metadata'));
