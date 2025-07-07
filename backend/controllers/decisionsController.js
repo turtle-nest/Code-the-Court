@@ -11,6 +11,11 @@ const fs = require('fs');
  */
 const updateDecisionKeywords = async (req, res, next) => {
   const { id } = req.params;
+
+  if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
+    return next(new ApiError('Invalid decision ID format', 400));
+  }
+
   const { keywords } = req.body;
 
   if (!Array.isArray(keywords)) {
@@ -18,7 +23,7 @@ const updateDecisionKeywords = async (req, res, next) => {
   }
 
   try {
-    await db.query('DELETE FROM decision_tags WHERE decision_id = $1', [id]);
+    await db.query('DELETE FROM decision_tags WHERE decision_id = $1::uuid', [id]);
 
     for (const kw of keywords) {
       const label = kw.trim();
@@ -38,7 +43,7 @@ const updateDecisionKeywords = async (req, res, next) => {
       }
 
       await db.query(
-        'INSERT INTO decision_tags (decision_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        'INSERT INTO decision_tags (decision_id, tag_id) VALUES ($1::uuid, $2) ON CONFLICT DO NOTHING',
         [id, tagId]
       );
     }
@@ -51,7 +56,7 @@ const updateDecisionKeywords = async (req, res, next) => {
       FROM decisions d
       LEFT JOIN decision_tags dt ON dt.decision_id = d.id
       LEFT JOIN tags t ON t.id = dt.tag_id
-      WHERE d.id = $1
+      WHERE d.id = $1::uuid
       GROUP BY d.id;
       `,
       [id]
@@ -298,12 +303,13 @@ const getDecisionsStats = async (req, res, next) => {
  */
 const getDecisionById = async (req, res, next) => {
   const { id } = req.params;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const uuidRegex = /^[0-9a-fA-F-]{36}$/;
 
   try {
     let rows;
 
     if (uuidRegex.test(id)) {
+      // ID est un UUID → on teste id + external_id séparément
       const result = await db.query(
         `
         SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source,
@@ -311,12 +317,13 @@ const getDecisionById = async (req, res, next) => {
         FROM decisions d
         LEFT JOIN decision_tags dt ON dt.decision_id = d.id
         LEFT JOIN tags t ON t.id = dt.tag_id
-        WHERE d.id = $1::uuid OR d.external_id = $1
+        WHERE d.id = $1::uuid OR d.external_id = $2
         GROUP BY d.id;`,
-        [id]
+        [id, id] // ⚡ Deux paramètres distincts !
       );
       rows = result.rows;
     } else {
+      // Fallback ECLI texte
       const result = await db.query(
         `
         SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source,
@@ -331,7 +338,7 @@ const getDecisionById = async (req, res, next) => {
       rows = result.rows;
     }
 
-    if (rows.length === 0) {
+    if (!rows || rows.length === 0) {
       return res.status(404).json({ message: `Decision not found for ${id}` });
     }
 

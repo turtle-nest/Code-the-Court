@@ -1,11 +1,7 @@
--- ============================================
 -- Enable extension for UUID generation
--- ============================================
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- ============================================
 -- Safe ENUM creation
--- ============================================
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_status') THEN
@@ -14,9 +10,7 @@ BEGIN
 END
 $$;
 
--- ============================================
 -- USERS
--- ============================================
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username VARCHAR,
@@ -28,13 +22,11 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- ============================================
--- DECISIONS (corrigé)
--- ============================================
+-- DECISIONS
 CREATE TABLE IF NOT EXISTS decisions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- ID interne UUID
-  external_id TEXT UNIQUE,                       -- ✅ ID Judilibre → TEXT car pas toujours UUID
-  ecli TEXT UNIQUE,                              -- ✅ Pour fallback recherche textuelle
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  external_id TEXT UNIQUE, -- TEXT pour ID Judilibre externe
+  ecli TEXT UNIQUE,        -- Pour fallback textuel
   title TEXT NOT NULL,
   content TEXT,
   date DATE,
@@ -42,16 +34,16 @@ CREATE TABLE IF NOT EXISTS decisions (
   case_type VARCHAR,
   source VARCHAR NOT NULL DEFAULT 'judilibre',
   public BOOLEAN DEFAULT TRUE,
-  imported_at TIMESTAMP NOT NULL DEFAULT NOW()
+  imported_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  solution TEXT,
+  formation TEXT
 );
 
 CREATE INDEX IF NOT EXISTS decisions_index_0 ON decisions (date);
 CREATE INDEX IF NOT EXISTS decisions_index_1 ON decisions (jurisdiction);
 CREATE INDEX IF NOT EXISTS decisions_index_2 ON decisions (ecli);
 
--- ============================================
 -- ARCHIVES
--- ============================================
 CREATE TABLE IF NOT EXISTS archives (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
@@ -68,9 +60,7 @@ CREATE TABLE IF NOT EXISTS archives (
 CREATE INDEX IF NOT EXISTS archives_index_0 ON archives (user_id);
 CREATE INDEX IF NOT EXISTS archives_index_1 ON archives (jurisdiction);
 
--- ============================================
 -- NOTES
--- ============================================
 CREATE TABLE IF NOT EXISTS notes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
@@ -81,9 +71,7 @@ CREATE TABLE IF NOT EXISTS notes (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- ============================================
 -- TAGS
--- ============================================
 CREATE TABLE IF NOT EXISTS tags (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   label VARCHAR NOT NULL UNIQUE
@@ -91,9 +79,7 @@ CREATE TABLE IF NOT EXISTS tags (
 
 CREATE UNIQUE INDEX IF NOT EXISTS tags_index_0 ON tags (label);
 
--- ============================================
 -- DECISION_TAGS
--- ============================================
 CREATE TABLE IF NOT EXISTS decision_tags (
   decision_id UUID NOT NULL,
   tag_id UUID NOT NULL,
