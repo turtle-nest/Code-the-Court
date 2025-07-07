@@ -34,23 +34,5 @@ export function readableCaseType(caseType) {
  * If your DB `title` is too long, recompose a short version here.
  */
 export function formatDecisionTitle(decision) {
-  if (!decision) return 'Sans titre';
-
-  const parts = [];
-
-  // Priorité : Pourvoi n°
-  if (decision.number) parts.push(`Pourvoi n° ${decision.number}`);
-
-  // Solution (ex: rejet, cassation)
-  if (decision.solution) parts.push(`Solution : ${decision.solution}`);
-
-  // ECLI pour référence
-  if (decision.ecli) parts.push(`ECLI: ${decision.ecli}`);
-
-  // Fallback si tout est vide
-  if (parts.length === 0 && decision.title) {
-    return decision.title.trim();
-  }
-
-  return parts.join(' - ').trim() || 'Sans titre';
+  return decision.title || 'Sans titre';
 }

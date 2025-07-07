@@ -14,11 +14,22 @@ export default function DecisionList({ decisions }) {
         console.log('📝 Une décision ➜', d);
         return (
           <li key={d.id || d.external_id} className="border rounded p-4 bg-white">
-            <strong>{d.title || d.reference || 'Untitled'}</strong>
+            <strong>{d.title || 'Sans titre'}</strong>
             <br />
             <span className="text-sm text-gray-500">
               Date : {d.date || '—'}
             </span>
+            <br />
+            {d.solution && (
+              <span className="block text-sm text-gray-600">
+                Solution : {d.solution}
+              </span>
+            )}
+            {d.formation && (
+              <span className="block text-sm text-gray-600">
+                Formation : {d.formation}
+              </span>
+            )}
             <br />
             <Link
               to={`/decisions/${d.id || d.external_id}`}

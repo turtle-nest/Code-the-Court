@@ -186,26 +186,28 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
 
     const buildJudilibreTitle = (decision) => {
       const parts = [];
+      if (decision.title && decision.title.trim()) {
+        return decision.title.trim();
+      }
       if (decision.number) parts.push(`Pourvoi n° ${decision.number}`);
       if (decision.solution) parts.push(`Solution : ${decision.solution}`);
       if (decision.ecli) parts.push(`ECLI: ${decision.ecli}`);
+      if (decision.jurisdiction) parts.push(`Jurisdiction: ${decision.jurisdiction}`);
+      if (decision.decision_date) parts.push(`du ${decision.decision_date}`);
       return parts.join(' - ').slice(0, 200).trim() || 'Sans titre';
     };
 
     for (const decision of results) {
-      const { id, ecli, decision_date, jurisdiction, type } = decision;
-
-      const title = buildJudilibreTitle(decision);
-      const content = decision.summary || decision.text || (decision.zones ? Object.values(decision.zones).join('\n\n') : '');
+      const { id, ecli, decision_date, jurisdiction, type, solution, formation } = decision;
 
       const insertQuery = `
-        INSERT INTO decisions
-          (external_id, ecli, title, content, date, jurisdiction, case_type, source, public, imported_at)
-        VALUES
-          ($1, $2, $3, $4, $5, $6, $7, 'judilibre', true, NOW())
-        ON CONFLICT (external_id) DO NOTHING
-        RETURNING id;
-      `;
+  INSERT INTO decisions
+    (external_id, ecli, title, content, date, jurisdiction, case_type, solution, formation, source, public, imported_at)
+  VALUES
+    ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'judilibre', true, NOW())
+  ON CONFLICT (external_id) DO NOTHING
+  RETURNING id;
+`;
 
       const values = [
         id || null,
@@ -214,7 +216,9 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
         content,
         decision_date || null,
         jurisdiction || '',
-        type || ''
+        type || '',
+        solution || '',
+        formation || ''
       ];
 
       const { rowCount } = await db.query(insertQuery, values);

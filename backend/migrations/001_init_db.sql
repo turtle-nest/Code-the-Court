@@ -102,3 +102,6 @@ CREATE TABLE IF NOT EXISTS decision_tags (
   FOREIGN KEY (decision_id) REFERENCES decisions(id),
   FOREIGN KEY (tag_id) REFERENCES tags(id)
 );
+
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS solution TEXT;
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS formation TEXT;

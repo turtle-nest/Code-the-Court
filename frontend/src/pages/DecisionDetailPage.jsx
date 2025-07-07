@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { readableJurisdiction, readableCaseType, formatDecisionTitle } from '../utils/formatLabels';
+import { readableJurisdiction, readableCaseType } from '../utils/formatLabels';
 import { updateDecisionKeywords } from '../services/decisions';
 
 const DecisionDetailPage = () => {
@@ -63,9 +63,23 @@ const DecisionDetailPage = () => {
   return (
     <>
       <button onClick={() => navigate(-1)} className="mb-6 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">← Retour</button>
-      <h1 className="text-2xl font-bold mb-2">{formatDecisionTitle(decision)}</h1>
-      <h2 className="text-xl italic mb-4">{readableJurisdiction(decision.jurisdiction)} — <span className="text-gray-500">{formatDate(decision.date)}</span></h2>
-      <p className="italic mb-4">Type d’affaire : {readableCaseType(decision.case_type)}</p>
+      <h1 className="text-2xl font-bold mb-2">{decision.title || 'Sans titre'}</h1>
+      <h2 className="text-xl italic mb-4">
+        {readableJurisdiction(decision.jurisdiction)} — <span className="text-gray-500">{formatDate(decision.date)}</span>
+      </h2>
+      <p className="italic mb-4">
+        Type d’affaire : {readableCaseType(decision.case_type)}
+      </p>
+      {decision.solution && (
+        <p className="italic mb-2">
+          Solution : {decision.solution}
+        </p>
+      )}
+      {decision.formation && (
+        <p className="italic mb-4">
+          Formation : {decision.formation}
+        </p>
+      )}
 
       <div className="border rounded p-4 mb-6 bg-white">
         <h3 className="font-bold mb-2">Contenu de la décision :</h3>
