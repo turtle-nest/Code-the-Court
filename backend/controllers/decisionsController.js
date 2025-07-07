@@ -186,7 +186,7 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
       query
     });
 
-    const results = Array.isArray(data) ? data : (data.results || []);
+    const results = Array.isArray(data.results) ? data.results : [];
     let inserted = 0;
 
     const buildJudilibreTitle = (decision) => {
@@ -200,7 +200,16 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
     };
 
     for (const decision of results) {
-      const { id, ecli, decision_date, jurisdiction, type, solution, formation, summary } = decision;
+      const {
+        id,
+        ecli,
+        decision_date,
+        jurisdiction,
+        type,
+        solution,
+        formation,
+        text  // ✅ récupéré par le service déjà avec fallback text || summary
+      } = decision;
 
       const insertQuery = `
         INSERT INTO decisions
@@ -215,7 +224,7 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
         id || null,
         ecli || null,
         buildJudilibreTitle(decision),
-        summary || '',
+        text || '',  // ✅ déjà fallback text || summary
         decision_date || null,
         jurisdiction || '',
         type || '',

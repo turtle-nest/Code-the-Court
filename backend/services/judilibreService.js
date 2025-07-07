@@ -1,4 +1,4 @@
-// services/judilibreService.js
+// backend/services/judilibreService.js
 const axios = require('axios');
 const { getJudilibreAccessToken } = require('./judilibreAuth');
 
@@ -12,7 +12,7 @@ async function fetchDecisionsFromJudilibre({
 }) {
   const accessToken = await getJudilibreAccessToken();
 
-  let queryString = query || '*'; // pour tout si vide
+  let queryString = query || '*'; // tout si vide
   if (dateDecisionMin && dateDecisionMax) {
     queryString += ` AND decision_date:[${dateDecisionMin} TO ${dateDecisionMax}]`;
   }
@@ -43,9 +43,23 @@ async function fetchDecisionsFromJudilibre({
     console.log('[DEBUG] Judilibre raw response:', response.data);
 
     if (typeof response.data === 'object' && response.data.results) {
+      // ✅ Map clair avec fallback text || summary
+      const results = response.data.results.map(item => ({
+        id: item.id || null,
+        ecli: item.ecli || null,
+        number: item.number || '',
+        decision_date: item.decision_date || null,
+        jurisdiction: item.jurisdiction || '',
+        type: item.type || '',
+        solution: item.solution || '',
+        formation: item.formation || '',
+        summary: item.summary || '',
+        text: (item.text && item.text.trim()) || (item.summary && item.summary.trim()) || ''
+      }));
+
       return {
-        results: response.data.results,
-        total: response.data.total || response.data.results.length,
+        results,
+        total: response.data.total || results.length,
         timestamp: new Date().toISOString(),
       };
     }
