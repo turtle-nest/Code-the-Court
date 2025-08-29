@@ -1,11 +1,68 @@
 // src/pages/DecisionDetailPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   readableJurisdiction,
   readableCaseType
-} from '../config/judilibreConfig'; // ✅ Nouveau chemin !
+} from '../config/judilibreConfig';
 import { updateDecisionKeywords } from '../services/decisions';
+
+/**
+ * Build an ordered list of text fragments from Judilibre "zones".
+ * zones shape example:
+ * {
+ *   introduction: [{ start: 0, end: 123 }, ...],
+ *   exposure: [{ start: 124, end: 456 }, ...],
+ *   ...
+ * }
+ */
+function linearizeZones(text, zones) {
+  if (!text || !zones) return [{ zone: 'full', fragment: text }];
+
+  const items = [];
+  for (const zoneName of Object.keys(zones)) {
+    const frags = zones[zoneName] || [];
+    for (const frag of frags) {
+      if (
+        typeof frag?.start === 'number' &&
+        typeof frag?.end === 'number' &&
+        frag.end > frag.start &&
+        frag.start >= 0 &&
+        frag.end <= text.length
+      ) {
+        items.push({
+          zone: zoneName,
+          start: frag.start,
+          end: frag.end
+        });
+      }
+    }
+  }
+
+  if (!items.length) return [{ zone: 'full', fragment: text }];
+
+  items.sort((a, b) => a.start - b.start);
+
+  return items.map(({ zone, start, end }) => ({
+    zone,
+    fragment: text.substring(start, end)
+  }));
+}
+
+/**
+ * Optional: humanize raw zone keys into FR section titles.
+ */
+function labelForZone(zone) {
+  const map = {
+    introduction: 'Introduction',
+    exposure: 'Exposé',
+    claims: 'Moyens',
+    grounds: 'Motifs',
+    device: 'Dispositif',
+    annexes: 'Annexes'
+  };
+  return map[zone] || zone;
+}
 
 const DecisionDetailPage = () => {
   const { id } = useParams();
@@ -13,18 +70,28 @@ const DecisionDetailPage = () => {
 
   const [decision, setDecision] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [newKeyword, setNewKeyword] = useState('');
   const [message, setMessage] = useState(null);
+  const [sectionedView, setSectionedView] = useState(true); // default to sectioned if zones available
 
   const formatDate = (dateString) => {
     if (!dateString) return '—';
     return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
-  const fetchDecision = async () => {
+  const fetchDecision = async (opts = { refresh: false }) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/decisions/${id}`);
+      if (opts.refresh) setRefreshing(true);
+      setLoading(!opts.refresh);
+      setError(null);
+
+      const url = opts.refresh
+        ? `/api/decisions/${id}?refresh=1`
+        : `/api/decisions/${id}`;
+
+      const res = await fetch(url);
       if (!res.ok) throw new Error(`Erreur API: ${res.status}`);
       const data = await res.json();
       setDecision(data);
@@ -33,59 +100,125 @@ const DecisionDetailPage = () => {
       setError(`❌ Erreur lors du chargement de la décision (ID : ${id})`);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  useEffect(() => { fetchDecision(); }, [id]);
+  useEffect(() => { fetchDecision(); /* eslint-disable-next-line */ }, [id]);
+
+  const handleForceRefresh = () => {
+    fetchDecision({ refresh: true });
+  };
 
   const handleAddKeyword = () => {
     if (newKeyword.trim()) {
-      setDecision({ ...decision, keywords: [...decision.keywords, newKeyword.trim()] });
+      setDecision(prev => ({
+        ...prev,
+        keywords: [...(prev.keywords || []), newKeyword.trim()]
+      }));
       setNewKeyword('');
     }
   };
 
   const handleRemoveKeyword = (kw) => {
-    setDecision({ ...decision, keywords: decision.keywords.filter(k => k !== kw) });
+    setDecision(prev => ({
+      ...prev,
+      keywords: (prev.keywords || []).filter(k => k !== kw)
+    }));
   };
 
   const handleSaveKeywords = async () => {
     try {
-      const updated = await updateDecisionKeywords(id, decision.keywords);
+      const updated = await updateDecisionKeywords(id, decision.keywords || []);
       setDecision(updated);
       setMessage('✅ Mots-clés mis à jour');
+      setTimeout(() => setMessage(null), 2500);
     } catch {
       setMessage('❌ Erreur lors de la mise à jour');
+      setTimeout(() => setMessage(null), 3000);
     }
   };
 
+  const parts = useMemo(() => {
+    if (!decision?.content) return [];
+    return linearizeZones(decision.content, decision.zones);
+  }, [decision]);
+
+  const hasZones = Boolean(decision?.zones) && parts.length > 0 && parts[0].zone !== 'full';
+
   if (loading) return <div className="p-8 italic">⏳ Chargement en cours...</div>;
   if (error) return <div className="p-8 text-red-600 font-semibold">{error}</div>;
+  if (!decision) return <div className="p-8">Décision introuvable.</div>;
 
   return (
     <>
-      <button onClick={() => navigate(-1)} className="mb-6 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">← Retour</button>
-      <h1 className="text-2xl font-bold mb-2">{decision.title || 'Sans titre'}</h1>
+      <div className="mb-6 flex flex-wrap gap-2 items-center">
+        <button
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+        >
+          ← Retour
+        </button>
+
+        <button
+          onClick={handleForceRefresh}
+          disabled={refreshing}
+          className={`px-4 py-2 rounded ${refreshing ? 'bg-gray-300' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
+          title="Récupérer à nouveau depuis Judilibre (texte intégral + zones)"
+        >
+          {refreshing ? 'Rafraîchissement…' : 'Rafraîchir depuis Judilibre'}
+        </button>
+
+        {hasZones && (
+          <label className="ml-auto flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={sectionedView}
+              onChange={(e) => setSectionedView(e.target.checked)}
+            />
+            Affichage sectionné (zones)
+          </label>
+        )}
+      </div>
+
+      <h1 className="text-2xl font-bold mb-2">
+        {decision.title || 'Sans titre'}
+      </h1>
+
       <h2 className="text-xl italic mb-4">
-        {readableJurisdiction(decision.jurisdiction)} — <span className="text-gray-500">{formatDate(decision.date)}</span>
+        {readableJurisdiction(decision.jurisdiction)} —{' '}
+        <span className="text-gray-500">{formatDate(decision.date)}</span>
       </h2>
-      <p className="italic mb-4">
+
+      <p className="italic mb-2">
         Type d’affaire : {readableCaseType(decision.case_type)}
       </p>
+
       {decision.solution && (
-        <p className="italic mb-2">
-          Solution : {decision.solution}
-        </p>
+        <p className="italic mb-2">Solution : {decision.solution}</p>
       )}
       {decision.formation && (
-        <p className="italic mb-4">
-          Formation : {decision.formation}
-        </p>
+        <p className="italic mb-4">Formation : {decision.formation}</p>
       )}
 
       <div className="border rounded p-4 mb-6 bg-white">
-        <h3 className="font-bold mb-2">Contenu de la décision :</h3>
-        <p className="whitespace-pre-wrap">{decision.content || 'Aucun contenu disponible.'}</p>
+        <h3 className="font-bold mb-3">Contenu de la décision :</h3>
+
+        {/* Sectioned view if zones are provided; fallback to full text */}
+        {hasZones && sectionedView ? (
+          <div>
+            {parts.map((p, i) => (
+              <section key={`${p.zone}-${i}`} className="mb-6">
+                <h4 className="font-semibold mb-2">{labelForZone(p.zone)}</h4>
+                <pre className="whitespace-pre-wrap leading-relaxed">{p.fragment}</pre>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <pre className="whitespace-pre-wrap leading-relaxed">
+            {decision.content || 'Aucun contenu disponible.'}
+          </pre>
+        )}
       </div>
 
       <div className="border rounded p-4 mb-6 bg-white">
@@ -93,21 +226,53 @@ const DecisionDetailPage = () => {
         <div className="flex flex-wrap gap-2 mt-1">
           {decision.keywords?.length > 0 ? (
             decision.keywords.map((kw, i) => (
-              <span key={i} className="bg-gray-200 px-2 py-1 rounded text-sm flex items-center">
+              <span
+                key={`${kw}-${i}`}
+                className="bg-gray-200 px-2 py-1 rounded text-sm flex items-center"
+              >
                 {kw}
-                <button type="button" onClick={() => handleRemoveKeyword(kw)} className="ml-1 text-red-600 font-bold">×</button>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveKeyword(kw)}
+                  className="ml-1 text-red-600 font-bold"
+                  title="Supprimer"
+                >
+                  ×
+                </button>
               </span>
             ))
-          ) : <span className="text-gray-400 text-sm">Aucun mot-clé</span>}
+          ) : (
+            <span className="text-gray-400 text-sm">Aucun mot-clé</span>
+          )}
         </div>
 
         <div className="flex mt-2 gap-2">
-          <input type="text" value={newKeyword} onChange={(e) => setNewKeyword(e.target.value)} className="border px-2 py-1 rounded" />
-          <button type="button" onClick={handleAddKeyword} className="px-3 py-1 bg-gray-300 rounded">+ Ajouter</button>
+          <input
+            type="text"
+            value={newKeyword}
+            onChange={(e) => setNewKeyword(e.target.value)}
+            className="border px-2 py-1 rounded"
+            placeholder="Nouveau mot-clé"
+          />
+          <button
+            type="button"
+            onClick={handleAddKeyword}
+            className="px-3 py-1 bg-gray-300 rounded"
+          >
+            + Ajouter
+          </button>
         </div>
 
-        <button onClick={handleSaveKeywords} className="mt-3 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Enregistrer</button>
-        {message && <p className="mt-2 font-semibold text-sm text-green-600">{message}</p>}
+        <button
+          onClick={handleSaveKeywords}
+          className="mt-3 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          Enregistrer
+        </button>
+
+        {message && (
+          <p className="mt-2 font-semibold text-sm text-green-600">{message}</p>
+        )}
       </div>
     </>
   );

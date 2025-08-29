@@ -91,3 +91,5 @@ CREATE TABLE IF NOT EXISTS decision_tags (
 
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS solution TEXT;
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS formation TEXT;
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS archive_id UUID REFERENCES archives(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS decisions_index_3 ON decisions (archive_id);

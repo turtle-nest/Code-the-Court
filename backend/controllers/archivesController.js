@@ -27,32 +27,44 @@ const createArchive = async (req, res, next) => {
   }
 
   try {
-    // ✅ URL publique vers ton PDF uploadé
     const pdfPublicUrl = `${process.env.BACKEND_URL || 'http://localhost:3000'}/${file.path}`;
 
-    // ✅ 1) Insère l'archive dans `archives` SEULEMENT
+    // ✅ 1) Crée l'archive
     const archiveResult = await db.query(
       `
-      INSERT INTO archives (title, content, date, jurisdiction, location, user_id, file_path)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *;
-      `,
+    INSERT INTO archives (title, content, date, jurisdiction, location, user_id, file_path)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING *;
+    `,
       [title, content, date, jurisdiction, location, user_id, file.path]
     );
 
     const archive = archiveResult.rows[0];
 
-    console.log(`✅ New archive created with ID: ${archive.id}`);
-    console.log(`✅ PDF accessible at: ${pdfPublicUrl}`);
+    console.log(`✅ New archive created: ${archive.id}`);
+
+    // ✅ 2) Crée la décision associée avec l'archive_id
+    const decisionResult = await db.query(
+      `
+    INSERT INTO decisions (title, content, date, jurisdiction, case_type, source, archive_id)
+    VALUES ($1, $2, $3, $4, $5, 'archive', $6)
+    RETURNING id;
+    `,
+      [title, content, date, jurisdiction, caseType || null, archive.id]
+    );
+
+    const decision = decisionResult.rows[0];
+    console.log(`✅ New decision linked: ${decision.id}`);
 
     res.status(201).json({
       message: '✅ Archive créée.',
       archive_id: archive.id,
-      pdf_link: pdfPublicUrl
+      pdf_link: pdfPublicUrl,
+      decision_id: decision.id,
     });
 
   } catch (error) {
-    console.error('❌ Error creating archive:', error);
+    console.error('❌ Error creating archive & decision:', error);
     next(new ApiError('Internal server error', 500));
   }
 };

@@ -1,10 +1,55 @@
 // backend/controllers/decisionsController.js
 
 const db = require('../config/db');
-const { fetchDecisionsFromJudilibre } = require('../services/judilibreService');
+const {
+  fetchDecisionsFromJudilibre,
+  fetchDecisionById
+} = require('../services/judilibreService');
 const ApiError = require('../utils/apiError');
 const path = require('path');
 const fs = require('fs');
+
+/**
+ * Ensure we have the full decision text.
+ * If the decision comes from Judilibre and content is missing/short,
+ * fetch the full text from Judilibre and persist it.
+ */
+async function ensureFullText(decisionRow) {
+  try {
+    const looksLikeOnlySummary =
+      !decisionRow?.content || String(decisionRow.content).trim().length < 1500;
+
+    if (
+      decisionRow &&
+      decisionRow.source === 'judilibre' &&
+      decisionRow.external_id &&
+      (looksLikeOnlySummary || decisionRow.forceRefresh === true)
+    ) {
+      const full = await fetchDecisionById(decisionRow.external_id);
+      const fullText = (full && (full.text || full.summary || '')).trim();
+
+      if (fullText) {
+        await db.query(
+          'UPDATE decisions SET content = $1 WHERE id = $2::uuid',
+          [fullText, decisionRow.id]
+        );
+        decisionRow.content = fullText;
+      }
+
+      // attach zones to API response (not stored in DB)
+      if (full?.zones) {
+        decisionRow.zones = full.zones;
+      }
+
+      // complete optional fields if missing
+      decisionRow.solution = decisionRow.solution || full.solution || '';
+      decisionRow.formation = decisionRow.formation || full.formation || '';
+    }
+  } catch (e) {
+    console.error('⚠️ ensureFullText fallback failed:', e.message || e);
+  }
+  return decisionRow;
+}
 
 /**
  * PUT /api/decisions/:id/keywords
@@ -51,7 +96,7 @@ const updateDecisionKeywords = async (req, res, next) => {
     const { rows: updated } = await db.query(
       `
       SELECT 
-        d.id, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.public,
+        d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.public,
         COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
       FROM decisions d
       LEFT JOIN decision_tags dt ON dt.decision_id = d.id
@@ -208,8 +253,19 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
         type,
         solution,
         formation,
-        text  // ✅ récupéré par le service déjà avec fallback text || summary
+        text  // may be missing on /search results
       } = decision;
+
+      // Best-effort enrichment at import time
+      let contentToSave = (text || '').trim();
+      if (!contentToSave && id) {
+        try {
+          const full = await fetchDecisionById(id);
+          contentToSave = (full && (full.text || full.summary || '')).trim();
+        } catch (e) {
+          console.warn(`⚠️ Unable to fetch full text for ${id}:`, e.message || e);
+        }
+      }
 
       const insertQuery = `
         INSERT INTO decisions
@@ -224,7 +280,7 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
         id || null,
         ecli || null,
         buildJudilibreTitle(decision),
-        text || '',  // ✅ déjà fallback text || summary
+        contentToSave || '',
         decision_date || null,
         jurisdiction || '',
         type || '',
@@ -318,24 +374,24 @@ const getDecisionById = async (req, res, next) => {
     let rows;
 
     if (uuidRegex.test(id)) {
-      // ID est un UUID → on teste id + external_id séparément
+      // ID is a UUID → check id OR external_id (text)
       const result = await db.query(
         `
-        SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source,
+        SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.solution, d.formation,
           COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
         FROM decisions d
         LEFT JOIN decision_tags dt ON dt.decision_id = d.id
         LEFT JOIN tags t ON t.id = dt.tag_id
         WHERE d.id = $1::uuid OR d.external_id = $2
         GROUP BY d.id;`,
-        [id, id] // ⚡ Deux paramètres distincts !
+        [id, id]
       );
       rows = result.rows;
     } else {
-      // Fallback ECLI texte
+      // fallback: try by ECLI
       const result = await db.query(
         `
-        SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source,
+        SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.solution, d.formation,
           COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
         FROM decisions d
         LEFT JOIN decision_tags dt ON dt.decision_id = d.id
@@ -351,7 +407,39 @@ const getDecisionById = async (req, res, next) => {
       return res.status(404).json({ message: `Decision not found for ${id}` });
     }
 
-    res.status(200).json(rows[0]);
+    // Work on a single row
+    let row = rows[0];
+
+    // diagnostics (optional)
+    console.log('[DecisionDetail][before] contentLen:', (row.content || '').length, 'src:', row.source, 'extId:', row.external_id);
+
+    // Manual refresh support (?refresh=1)
+    const forceRefresh = req.query.refresh === '1';
+    if (forceRefresh && row.source === 'judilibre' && row.external_id) {
+      try {
+        const full = await fetchDecisionById(row.external_id);
+        const fullText = (full.text || full.summary || '').trim();
+        if (fullText) {
+          await db.query('UPDATE decisions SET content = $1 WHERE id = $2::uuid', [fullText, row.id]);
+          row.content = fullText;
+        }
+        if (full?.zones) row.zones = full.zones;
+        row.solution = row.solution || full.solution || '';
+        row.formation = row.formation || full.formation || '';
+      } catch (e) {
+        console.warn('⚠️ forceRefresh failed:', e.message || e);
+      }
+      // hint ensureFullText to skip shortness check
+      row.forceRefresh = true;
+    }
+
+    // Auto-enrich if content looks short
+    row = await ensureFullText(row);
+
+    // diagnostics (optional)
+    console.log('[DecisionDetail][after] contentLen:', (row.content || '').length, 'hasZones:', !!row.zones);
+
+    res.status(200).json(row);
   } catch (err) {
     console.error('❌ Error fetching decision by id:', err);
     next(new ApiError('Failed to fetch decision', 500));
