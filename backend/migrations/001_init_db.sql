@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS archives (
   content TEXT,
   date DATE,
   jurisdiction VARCHAR,
+  case_type VARCHAR,
   location VARCHAR,
   user_id UUID NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),

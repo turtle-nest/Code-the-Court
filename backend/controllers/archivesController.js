@@ -5,7 +5,7 @@ const db = require('../config/db');
 const ApiError = require('../utils/apiError');
 
 const createArchive = async (req, res, next) => {
-  const { title, content, date, jurisdiction, location } = req.body;
+  const { title, content, date, jurisdiction, case_type, location } = req.body;
   const file = req.file;
 
   if (!req.user || !req.user.id) {
@@ -50,7 +50,7 @@ const createArchive = async (req, res, next) => {
     VALUES ($1, $2, $3, $4, $5, 'archive', $6)
     RETURNING id;
     `,
-      [title, content, date, jurisdiction, caseType || null, archive.id]
+      [title, content, date, jurisdiction, case_type || null, archive.id]
     );
 
     const decision = decisionResult.rows[0];
