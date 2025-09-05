@@ -11,12 +11,6 @@ const API_URL = import.meta.env.VITE_API_URL || '';
 
 /**
  * Build an ordered list of text fragments from Judilibre "zones".
- * zones shape example:
- * {
- *   introduction: [{ start: 0, end: 123 }, ...],
- *   exposure: [{ start: 124, end: 456 }, ...],
- *   ...
- * }
  */
 function linearizeZones(text, zones) {
   if (!text || !zones) return [{ zone: 'full', fragment: text }];
@@ -32,17 +26,12 @@ function linearizeZones(text, zones) {
         frag.start >= 0 &&
         frag.end <= text.length
       ) {
-        items.push({
-          zone: zoneName,
-          start: frag.start,
-          end: frag.end
-        });
+        items.push({ zone: zoneName, start: frag.start, end: frag.end });
       }
     }
   }
 
   if (!items.length) return [{ zone: 'full', fragment: text }];
-
   items.sort((a, b) => a.start - b.start);
 
   return items.map(({ zone, start, end }) => ({
@@ -77,8 +66,15 @@ const DecisionDetailPage = () => {
   const [newKeyword, setNewKeyword] = useState('');
   const [message, setMessage] = useState(null);
   const [sectionedView, setSectionedView] = useState(true); // default to sectioned if zones available
+
   // PDF (archives only)
-  const [pdfInfo, setPdfInfo] = useState({ isPdf: false, fileUrl: null, downloadUrl: null });
+  const [pdfInfo, setPdfInfo] = useState({
+    isPdf: false,
+    fileUrl: null,
+    downloadUrl: null
+  });
+
+  const isArchive = decision?.source === 'archive';
 
   const formatDate = (dateString) => {
     if (!dateString) return '—';
@@ -115,7 +111,7 @@ const DecisionDetailPage = () => {
     async function loadPdf() {
       setPdfInfo({ isPdf: false, fileUrl: null, downloadUrl: null });
       if (!decision) return;
-      // Deux stratégies :
+
       // 1) L’API decision renvoie déjà file_url/download_url/is_pdf (par ex.)
       if (decision.is_pdf && (decision.file_url || decision.download_url)) {
         setPdfInfo({
@@ -125,6 +121,7 @@ const DecisionDetailPage = () => {
         });
         return;
       }
+
       // 2) Sinon, si c’est une archive, on appelle /api/archives/:archive_id
       if (decision.source === 'archive' && decision.archive_id) {
         try {
@@ -202,16 +199,20 @@ const DecisionDetailPage = () => {
           ← Retour
         </button>
 
-        <button
-          onClick={handleForceRefresh}
-          disabled={refreshing}
-          className={`px-4 py-2 rounded ${refreshing ? 'bg-gray-300' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
-          title="Récupérer à nouveau depuis Judilibre (texte intégral + zones)"
-        >
-          {refreshing ? 'Rafraîchissement…' : 'Rafraîchir depuis Judilibre'}
-        </button>
+        {/* Hide "Rafraîchir depuis Judilibre" for archives */}
+        {!isArchive && (
+          <button
+            onClick={handleForceRefresh}
+            disabled={refreshing}
+            className={`px-4 py-2 rounded ${refreshing ? 'bg-gray-300' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
+            title="Récupérer à nouveau depuis Judilibre (texte intégral + zones)"
+          >
+            {refreshing ? 'Rafraîchissement…' : 'Rafraîchir depuis Judilibre'}
+          </button>
+        )}
 
-        {hasZones && (
+        {/* Hide zone toggle for archives */}
+        {!isArchive && hasZones && (
           <label className="ml-auto flex items-center gap-2 text-sm">
             <input
               type="checkbox"
@@ -284,25 +285,28 @@ const DecisionDetailPage = () => {
       )}
       {/* === /PDF === */}
 
-      <div className="border rounded p-4 mb-6 bg-white">
-        <h3 className="font-bold mb-3">Contenu de la décision :</h3>
+      {/* Hide whole textual content block for archives */}
+      {!isArchive && (
+        <div className="border rounded p-4 mb-6 bg-white">
+          <h3 className="font-bold mb-3">Contenu de la décision :</h3>
 
-        {/* Sectioned view if zones are provided; fallback to full text */}
-        {hasZones && sectionedView ? (
-          <div>
-            {parts.map((p, i) => (
-              <section key={`${p.zone}-${i}`} className="mb-6">
-                <h4 className="font-semibold mb-2">{labelForZone(p.zone)}</h4>
-                <pre className="whitespace-pre-wrap leading-relaxed">{p.fragment}</pre>
-              </section>
-            ))}
-          </div>
-        ) : (
-          <pre className="whitespace-pre-wrap leading-relaxed">
-            {decision.content || 'Aucun contenu disponible.'}
-          </pre>
-        )}
-      </div>
+          {/* Sectioned view if zones are provided; fallback to full text */}
+          {hasZones && sectionedView ? (
+            <div>
+              {parts.map((p, i) => (
+                <section key={`${p.zone}-${i}`} className="mb-6">
+                  <h4 className="font-semibold mb-2">{labelForZone(p.zone)}</h4>
+                  <pre className="whitespace-pre-wrap leading-relaxed">{p.fragment}</pre>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <pre className="whitespace-pre-wrap leading-relaxed">
+              {decision.content || 'Aucun contenu disponible.'}
+            </pre>
+          )}
+        </div>
+      )}
 
       <div className="border rounded p-4 mb-6 bg-white">
         <h3 className="font-bold mb-2">Mots-clés :</h3>
