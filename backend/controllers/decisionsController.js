@@ -6,6 +6,7 @@ const {
   fetchDecisionById
 } = require('../services/judilibreService');
 const ApiError = require('../utils/apiError');
+const { signArchiveLink } = require('../utils/signedLinks');
 const path = require('path');
 const fs = require('fs');
 
@@ -121,74 +122,143 @@ const updateDecisionKeywords = async (req, res, next) => {
  */
 const getAllDecisions = async (req, res, next) => {
   try {
-    const {
-      date, juridiction, type_affaire, keyword, start_date, end_date, source,
-      page = 1, limit = 10, sortBy = 'date', order = 'desc'
-    } = req.query;
+    // --- Normalisation des paramètres (accepte fr/en + snake/camel) ---
+    const q = req.query;
 
-    const pageInt = parseInt(page);
-    const limitInt = parseInt(limit) || 10;
+    const norm = {
+      start_date: q.start_date || q.startDate || null,
+      end_date: q.end_date || q.endDate || null,
+      // ex: "cour_de_cassation" (valeur canonique de ta liste)
+      jurisdiction: q.jurisdiction || q.juridiction || null,
+      // ex: "civile", "penale", etc.
+      case_type: q.case_type || q.type_affaire || q.typeAffaire || null,
+      // mot(s) clé(s) pour tags; supporte "a, b, c"
+      keywords: q.keywords || q.keyword || null,
+      // peut être string | string[]
+      source: q.source,
+      // tri/pagination
+      page: Number(q.page || 1),
+      limit: Number(q.limit || 10),
+      sortBy: (q.sortBy || 'date').toLowerCase(),
+      order: (q.order || 'desc').toLowerCase(),
+      // compat: si quelqu’un envoie encore "date" exact (égalité stricte)
+      exact_date: q.date || null,
+    };
 
-    if (isNaN(pageInt) || pageInt < 1) return next(new ApiError('Invalid page number', 400));
-    if (isNaN(limitInt) || limitInt < 1 || limitInt > 50) return next(new ApiError('Invalid limit', 400));
+    // --- Validation légère ---
+    if (!Number.isInteger(norm.page) || norm.page < 1) {
+      return next(new ApiError('Invalid page number', 400));
+    }
+    if (!Number.isInteger(norm.limit) || norm.limit < 1 || norm.limit > 50) {
+      return next(new ApiError('Invalid limit', 400));
+    }
 
     const allowedSortBy = ['date', 'jurisdiction', 'case_type'];
     const allowedOrder = ['asc', 'desc'];
-    if (!allowedSortBy.includes(sortBy)) return next(new ApiError('Invalid sortBy field', 400));
-    if (!allowedOrder.includes(order.toLowerCase())) return next(new ApiError('Invalid order', 400));
+    if (!allowedSortBy.includes(norm.sortBy)) {
+      return next(new ApiError('Invalid sortBy field', 400));
+    }
+    if (!allowedOrder.includes(norm.order)) {
+      return next(new ApiError('Invalid order', 400));
+    }
 
-    const offset = (pageInt - 1) * limitInt;
+    const offset = (norm.page - 1) * norm.limit;
 
+    // --- Construction WHERE paramétrée ---
     let baseQuery = `
       FROM decisions d
       LEFT JOIN decision_tags dt ON dt.decision_id = d.id
       LEFT JOIN tags t ON t.id = dt.tag_id
       WHERE 1=1
     `;
-    const filters = [];
-    if (date) { filters.push(date); baseQuery += ` AND d.date = $${filters.length}`; }
-    if (start_date) { filters.push(start_date); baseQuery += ` AND d.date >= $${filters.length}`; }
-    if (end_date) { filters.push(end_date); baseQuery += ` AND d.date <= $${filters.length}`; }
-    if (juridiction) { filters.push(`%${juridiction}%`); baseQuery += ` AND d.jurisdiction ILIKE $${filters.length}`; }
-    if (type_affaire) { filters.push(`%${type_affaire}%`); baseQuery += ` AND d.case_type ILIKE $${filters.length}`; }
-    if (keyword) {
-      filters.push(`%${keyword}%`);
-      baseQuery += `
-        AND EXISTS (
-          SELECT 1 FROM decision_tags dt2
-          JOIN tags t2 ON t2.id = dt2.tag_id
-          WHERE dt2.decision_id = d.id
-          AND t2.label ILIKE $${filters.length}
-        )
-      `;
+
+    const values = [];
+    const add = (cond) => baseQuery += ` AND ${cond}`;
+
+    if (norm.exact_date) {
+      values.push(norm.exact_date);
+      add(`d.date::date = $${values.length}::date`);
     }
-    if (source) {
-      if (Array.isArray(source)) {
-        const placeholders = source.map((_, i) => `$${filters.length + i + 1}`).join(', ');
-        filters.push(...source);
-        baseQuery += ` AND d.source IN (${placeholders})`;
-      } else {
-        filters.push(source);
-        baseQuery += ` AND d.source = $${filters.length}`;
+    if (norm.start_date) {
+      values.push(norm.start_date);
+      add(`d.date::date >= $${values.length}::date`);
+    }
+    if (norm.end_date) {
+      values.push(norm.end_date);
+      add(`d.date::date <= $${values.length}::date`);
+    }
+
+    // Sélecteurs -> égalité stricte (valeurs viennent de listes contrôlées)
+    if (norm.jurisdiction) {
+      values.push(norm.jurisdiction);
+      add(`d.jurisdiction = $${values.length}`);
+    }
+    if (norm.case_type) {
+      values.push(norm.case_type);
+      add(`d.case_type = $${values.length}`);
+    }
+
+    // Filtre strict par tags (keywords) ; support multi-termes "a, b, c" => OR
+    if (norm.keywords) {
+      const terms = String(norm.keywords)
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      if (terms.length > 0) {
+        const startIdx = values.length + 1;
+        terms.forEach(term => values.push(`%${term}%`));
+        const ors = terms
+          .map((_, i) => `t2.label ILIKE $${startIdx + i}`)
+          .join(' OR ');
+
+        add(`
+          EXISTS (
+            SELECT 1
+            FROM decision_tags dt2
+            JOIN tags t2 ON t2.id = dt2.tag_id
+            WHERE dt2.decision_id = d.id
+              AND (${ors})
+          )
+        `);
       }
     }
 
-    const countQuery = `SELECT COUNT(DISTINCT d.id) AS totalCount ${baseQuery};`;
-    const countResult = await db.query(countQuery, filters);
-    const totalCount = parseInt(countResult.rows[0].totalcount) || 0;
+    // Source (array ou string)
+    if (norm.source) {
+      const sources = Array.isArray(norm.source)
+        ? norm.source
+        : String(norm.source).split(',').map(s => s.trim()).filter(Boolean);
 
-    const dataQuery = `
-      SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.public,
+      if (sources.length > 0) {
+        const startIdx = values.length + 1;
+        values.push(...sources);
+        const placeholders = sources.map((_, i) => `$${startIdx + i}`).join(', ');
+        add(`d.source IN (${placeholders})`);
+      }
+    }
+
+    // --- Count ---
+    const countSql = `SELECT COUNT(DISTINCT d.id) AS totalCount ${baseQuery};`;
+    const { rows: countRows } = await db.query(countSql, values);
+    const totalCount = Number(countRows[0]?.totalcount || 0);
+
+    // --- Data (pagination + tri whitelistés) ---
+    const dataSql = `
+      SELECT
+        d.id, d.external_id, d.ecli, d.title, d.content, d.date,
+        d.jurisdiction, d.case_type, d.source, d.public,
         COALESCE(json_agg(t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
       ${baseQuery}
       GROUP BY d.id
-      ORDER BY d.${sortBy} ${order.toUpperCase()}
-      LIMIT $${filters.length + 1} OFFSET $${filters.length + 2};
+      ORDER BY d.${norm.sortBy} ${norm.order.toUpperCase()}
+      LIMIT $${values.length + 1} OFFSET $${values.length + 2};
     `;
-    const dataValues = [...filters, limitInt, offset];
-    const result = await db.query(dataQuery, dataValues);
+    const dataVals = [...values, norm.limit, offset];
 
-    res.status(200).json({ results: result.rows, totalCount });
+    const { rows } = await db.query(dataSql, dataVals);
+
+    res.status(200).json({ results: rows, totalCount });
   } catch (error) {
     console.error('❌ Error fetching decisions:', error);
     next(new ApiError('Internal server error', 500));
@@ -377,13 +447,14 @@ const getDecisionById = async (req, res, next) => {
       // ID is a UUID → check id OR external_id (text)
       const result = await db.query(
         `
-        SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.solution, d.formation,
+        SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.solution, d.formation, d.archive_id, a.file_path,
           COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
         FROM decisions d
+        LEFT JOIN archives a ON a.id = d.archive_id
         LEFT JOIN decision_tags dt ON dt.decision_id = d.id
         LEFT JOIN tags t ON t.id = dt.tag_id
         WHERE d.id = $1::uuid OR d.external_id = $2
-        GROUP BY d.id;`,
+        GROUP BY d.id, a.file_path, d.archive_id;`,
         [id, id]
       );
       rows = result.rows;
@@ -438,6 +509,34 @@ const getDecisionById = async (req, res, next) => {
 
     // diagnostics (optional)
     console.log('[DecisionDetail][after] contentLen:', (row.content || '').length, 'hasZones:', !!row.zones);
+
+    // === Enrichissement PDF (archives uniquement) ===
+    const filePath = row.file_path || null;
+    const isPdf = row.source === 'archive'
+      && !!filePath
+      && filePath.toLowerCase().endsWith('.pdf');
+
+    // Utilise BACKEND_URL si dispo, sinon recompose à partir de la requête
+    const base =
+      process.env.BACKEND_URL
+      || `${req.protocol}://${req.get('host')}`;
+
+    row.is_pdf = isPdf;
+
+    if (isPdf && row.archive_id) {
+      const fileTok = signArchiveLink(row.archive_id, 'file');
+      const dlTok = signArchiveLink(row.archive_id, 'download');
+
+      row.file_url = `${base}/api/archives/${row.archive_id}/file?token=${encodeURIComponent(fileTok)}`;
+      row.download_url = `${base}/api/archives/${row.archive_id}/download?token=${encodeURIComponent(dlTok)}`;
+    } else {
+      row.file_url = null;
+      row.download_url = null;
+    }
+
+    // Optionnel: ne pas exposer file_path au client
+    delete row.file_path;
+    // === /PDF ===
 
     res.status(200).json(row);
   } catch (err) {

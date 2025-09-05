@@ -7,6 +7,8 @@ import {
 } from '../config/judilibreConfig';
 import { updateDecisionKeywords } from '../services/decisions';
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 /**
  * Build an ordered list of text fragments from Judilibre "zones".
  * zones shape example:
@@ -75,6 +77,8 @@ const DecisionDetailPage = () => {
   const [newKeyword, setNewKeyword] = useState('');
   const [message, setMessage] = useState(null);
   const [sectionedView, setSectionedView] = useState(true); // default to sectioned if zones available
+  // PDF (archives only)
+  const [pdfInfo, setPdfInfo] = useState({ isPdf: false, fileUrl: null, downloadUrl: null });
 
   const formatDate = (dateString) => {
     if (!dateString) return '—';
@@ -105,6 +109,44 @@ const DecisionDetailPage = () => {
   };
 
   useEffect(() => { fetchDecision(); /* eslint-disable-next-line */ }, [id]);
+
+  // Charge les URLs PDF si la décision est une archive
+  useEffect(() => {
+    async function loadPdf() {
+      setPdfInfo({ isPdf: false, fileUrl: null, downloadUrl: null });
+      if (!decision) return;
+      // Deux stratégies :
+      // 1) L’API decision renvoie déjà file_url/download_url/is_pdf (par ex.)
+      if (decision.is_pdf && (decision.file_url || decision.download_url)) {
+        setPdfInfo({
+          isPdf: true,
+          fileUrl: decision.file_url,
+          downloadUrl: decision.download_url
+        });
+        return;
+      }
+      // 2) Sinon, si c’est une archive, on appelle /api/archives/:archive_id
+      if (decision.source === 'archive' && decision.archive_id) {
+        try {
+          const res = await fetch(`${API_URL}/api/archives/${decision.archive_id}`, {
+            credentials: 'include'
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const a = await res.json();
+          if (a?.is_pdf && (a.file_url || a.download_url)) {
+            setPdfInfo({
+              isPdf: true,
+              fileUrl: a.file_url,
+              downloadUrl: a.download_url
+            });
+          }
+        } catch (e) {
+          console.warn('[i] No PDF available for this archive or fetch failed', e);
+        }
+      }
+    }
+    loadPdf();
+  }, [decision]);
 
   const handleForceRefresh = () => {
     fetchDecision({ refresh: true });
@@ -190,6 +232,19 @@ const DecisionDetailPage = () => {
         <span className="text-gray-500">{formatDate(decision.date)}</span>
       </h2>
 
+      {/* DEBUG (temporaire) */}
+      <pre className="text-xs bg-gray-50 p-2 rounded border overflow-auto">
+        {JSON.stringify({
+          id: decision.id,
+          source: decision.source,
+          archive_id: decision.archive_id,
+          is_pdf_from_decision: decision.is_pdf,
+          file_url_from_decision: decision.file_url,
+          download_url_from_decision: decision.download_url,
+          pdfInfo
+        }, null, 2)}
+      </pre>
+
       <p className="italic mb-2">
         Type d’affaire : {readableCaseType(decision.case_type)}
       </p>
@@ -200,6 +255,34 @@ const DecisionDetailPage = () => {
       {decision.formation && (
         <p className="italic mb-4">Formation : {decision.formation}</p>
       )}
+
+      {/* === PDF preview & download — archives only === */}
+      {pdfInfo.isPdf && (
+        <div className="border rounded p-4 mb-6 bg-white">
+          <h3 className="font-bold mb-3">Fichier PDF (archive) :</h3>
+          <div className="flex gap-3 mb-4">
+            {pdfInfo?.downloadUrl && (
+              <a
+                href={pdfInfo.downloadUrl}
+                className="inline-flex items-center rounded px-4 py-2 border shadow-sm hover:shadow-md transition"
+              >
+                Télécharger le PDF
+              </a>
+            )}
+          </div>
+          {pdfInfo.fileUrl && (
+            <div className="w-full h-[75vh] border rounded-xl shadow-sm overflow-hidden">
+              <iframe title="Aperçu PDF" src={pdfInfo.fileUrl} className="w-full h-full" />
+            </div>
+          )}
+          {!pdfInfo.fileUrl && (
+            <p className="text-sm text-gray-500">
+              Aucun aperçu disponible. Utilisez le bouton “Télécharger”.
+            </p>
+          )}
+        </div>
+      )}
+      {/* === /PDF === */}
 
       <div className="border rounded p-4 mb-6 bg-white">
         <h3 className="font-bold mb-3">Contenu de la décision :</h3>

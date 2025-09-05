@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./config/db');
 const errorHandler = require('./middlewares/errorHandler');
+const uploadsRoot = path.join(process.cwd(), 'uploads');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,7 +18,12 @@ app.use(cors({
 }));
 
 // ✅ Sert les fichiers PDF
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
+  fallthrough: true,
+  dotfiles: 'ignore',
+  index: false,
+  // (optionnel) setHeaders: (res) => { res.set('Cache-Control', 'private, max-age=31536000'); }
+}));
 
 // ✅ Body parser pour formulaires HTML classiques
 app.use(express.urlencoded({ extended: true }));
@@ -36,6 +42,7 @@ app.use('/api/stats', require('./routes/stats'));
 app.use('/api/notes', require('./routes/notes'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/metadata', require('./routes/metadata'));
+app.use('/uploads', express.static(uploadsRoot));
 
 // ✅ Route test
 app.get('/', (req, res) => {

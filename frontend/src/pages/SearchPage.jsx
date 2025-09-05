@@ -41,6 +41,15 @@ const SearchPage = () => {
     setError(null);
     try {
       const params = new URLSearchParams(filters);
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v === undefined || v === null || v === '') return;
+        if (Array.isArray(v)) {
+          v.forEach(val => params.append(k, val));
+        } else {
+          params.set(k, v);
+        }
+      });
+
       const res = await fetch(`http://localhost:3000/api/decisions?${params.toString()}`);
       if (!res.ok) throw new Error(`Erreur API: ${res.status}`);
       const data = await res.json();
@@ -79,11 +88,14 @@ const SearchPage = () => {
   }, []);
 
   useEffect(() => {
-    const params = Object.fromEntries([...searchParams]);
-    if (Object.keys(params).length > 0) {
-      if (!params.page) params.page = 1;
-      if (!params.limit) params.limit = 10;
-      fetchResults(params);
+    const obj = Object.fromEntries([...searchParams]);
+    const sources = searchParams.getAll('source');
+    if (sources.length > 0) obj.source = sources;
+
+    if (Object.keys(obj).length > 0) {
+      obj.page = Number(obj.page) || 1;
+      obj.limit = Number(obj.limit) || 10;
+      fetchResults(obj);
     } else {
       setResults([]);
       setSuccessMessage('');
@@ -175,10 +187,13 @@ const SearchPage = () => {
               currentPage={currentPage}
               totalPages={Math.ceil(totalCount / 10)}
               onPageChange={(newPage) => {
-                const params = Object.fromEntries([...searchParams]);
-                params.page = newPage;
-                params.limit = 10;
-                setSearchParams(params);
+                const obj = Object.fromEntries([...searchParams]);
+                const sources = searchParams.getAll('source');
+                if (sources.length > 0) obj.source = sources;
+
+                obj.page = newPage;
+                obj.limit = 10;
+                setSearchParams(obj);
               }}
             />
           </>

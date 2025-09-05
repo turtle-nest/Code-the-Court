@@ -1,64 +1,61 @@
-// ✅ src/components/SearchForm.jsx
+// src/components/SearchForm.jsx
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { readableJurisdiction, readableCaseType } from '../config/judilibreConfig'; // ✅ Nouveau chemin !
+import { readableJurisdiction, readableCaseType } from '../config/judilibreConfig';
 
-export default function SearchForm({
-  onSearch,
-  jurisdictions,
-  caseTypes
-}) {
+export default function SearchForm({ onSearch, jurisdictions, caseTypes }) {
   const [searchParams] = useSearchParams();
 
-  const [dateStart, setDateStart] = useState(searchParams.get('startDate') || '');
-  const [dateEnd, setDateEnd] = useState(searchParams.get('endDate') || '');
-  const [juridiction, setJuridiction] = useState(searchParams.get('juridiction') || '');
-  const [typeAffaire, setTypeAffaire] = useState(searchParams.get('type_affaire') || '');
-  const [keyword, setKeyword] = useState(searchParams.get('keywords') || '');
+  // Support both new & old param names (compat), prefer snake_case
+  const [startDate, setStartDate] = useState(
+    searchParams.get('start_date') || searchParams.get('startDate') || ''
+  );
+  const [endDate, setEndDate] = useState(
+    searchParams.get('end_date') || searchParams.get('endDate') || ''
+  );
+  const [jurisdiction, setJurisdiction] = useState(
+    searchParams.get('jurisdiction') || searchParams.get('juridiction') || ''
+  );
+  const [caseType, setCaseType] = useState(
+    searchParams.get('case_type') || searchParams.get('type_affaire') || ''
+  );
+  const [keyword, setKeyword] = useState(
+    searchParams.get('keywords') || searchParams.get('keyword') || ''
+  );
   const [source, setSource] = useState(searchParams.getAll('source') || []);
 
   const handleSourceChange = (e) => {
     const { value, checked } = e.target;
-    if (checked) {
-      setSource(prev => [...prev, value]);
-    } else {
-      setSource(prev => prev.filter(v => v !== value));
-    }
+    setSource((prev) => (checked ? [...prev, value] : prev.filter((v) => v !== value)));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const filters = {
-      startDate: dateStart,
-      endDate: dateEnd,
-      juridiction,
-      type_affaire: typeAffaire,
-      keywords: keyword,
-      page: 1,
-      limit: 10
-    };
 
-    if (source.length > 0) {
-      filters.source = source;
-    }
+    // Only send non-empty filters; backend accepts these keys
+    const filters = { page: 1, limit: 10 };
+    if (startDate) filters.start_date = startDate;
+    if (endDate) filters.end_date = endDate;
+    if (jurisdiction) filters.jurisdiction = jurisdiction;
+    if (caseType) filters.case_type = caseType;
+    if (keyword) filters.keywords = keyword;
+    if (source.length > 0) filters.source = source;
 
     onSearch(filters);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl">
-      <p className="italic mb-2">
-        Rechercher dans le corpus selon les critères suivants :
-      </p>
+      <p className="italic mb-2">Rechercher dans le corpus selon les critères suivants :</p>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <select
-          value={juridiction}
-          onChange={e => setJuridiction(e.target.value)}
+          value={jurisdiction}
+          onChange={(e) => setJurisdiction(e.target.value)}
           className="border px-3 py-2 rounded"
         >
           <option value="">-- Juridiction --</option>
-          {jurisdictions.map(j => (
+          {jurisdictions.map((j) => (
             <option key={j} value={j}>
               {readableJurisdiction(j)}
             </option>
@@ -66,12 +63,12 @@ export default function SearchForm({
         </select>
 
         <select
-          value={typeAffaire}
-          onChange={e => setTypeAffaire(e.target.value)}
+          value={caseType}
+          onChange={(e) => setCaseType(e.target.value)}
           className="border px-3 py-2 rounded"
         >
           <option value="">-- Type d'affaire --</option>
-          {caseTypes.map(t => (
+          {caseTypes.map((t) => (
             <option key={t} value={t}>
               {readableCaseType(t)}
             </option>
@@ -81,7 +78,7 @@ export default function SearchForm({
         <input
           type="text"
           value={keyword}
-          onChange={e => setKeyword(e.target.value)}
+          onChange={(e) => setKeyword(e.target.value)}
           placeholder="Mots-clés"
           className="border px-3 py-2 rounded"
         />
@@ -90,14 +87,14 @@ export default function SearchForm({
       <div className="flex gap-4">
         <input
           type="date"
-          value={dateStart}
-          onChange={e => setDateStart(e.target.value)}
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
           className="border px-3 py-2 rounded"
         />
         <input
           type="date"
-          value={dateEnd}
-          onChange={e => setDateEnd(e.target.value)}
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
           className="border px-3 py-2 rounded"
         />
       </div>
