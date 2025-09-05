@@ -1,10 +1,17 @@
+// backend/routes/notes.js
 const express = require('express');
 const router = express.Router();
+const { listNotes, createNote, updateNote, deleteNote } = require('../controllers/notesController');
+const auth = require('../middlewares/authMiddleware'); // must set req.user
 
-const authMiddleware = require('../middlewares/authMiddleware');
-const { createNote } = require('../controllers/notesController');
-const { validateCreateNote } = require('../middlewares/validateInput');
+// Generic notes endpoints
+router.get('/', auth, listNotes);
+router.post('/', auth, createNote);
+router.patch('/:id', auth, updateNote);
+router.delete('/:id', auth, deleteNote);
 
-router.post('/', authMiddleware, validateCreateNote, createNote);
+// Nested under decisions (convenience)
+router.get('/decision/:decisionId', auth, listNotes);
+router.post('/decision/:decisionId', auth, createNote);
 
 module.exports = router;

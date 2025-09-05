@@ -1,54 +1,47 @@
 // backend/middlewares/authMiddleware.js
-
 const jwt = require('jsonwebtoken');
 const ApiError = require('../utils/apiError');
 
 const authMiddleware = (req, res, next) => {
+  // (Debug) désactive en prod si besoin
   console.log('🔒 Incoming request headers:', req.headers);
 
-  const authHeader = req.headers['authorization'];
+  // 1) Authorization: Bearer <token>
+  const authHeader = req.headers.authorization;
+  const headerToken = authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7)
+    : null;
 
-  if (!authHeader) {
-    console.warn('❌ Unauthorized: No Authorization header');
-    return next(new ApiError('Unauthorized: Missing Authorization header', 401));
-  }
+  // 2) Cookie httpOnly "token" (nécessite cookie-parser + CORS credentials)
+  const cookieToken = req.cookies?.token || null;
 
-  if (!authHeader.startsWith('Bearer ')) {
-    console.warn('❌ Unauthorized: Invalid Authorization format');
-    return next(new ApiError('Unauthorized: Invalid Authorization format', 401));
-  }
-
-  const token = authHeader.split(' ')[1];
+  const token = headerToken || cookieToken;
 
   if (!token) {
-    console.warn('❌ Unauthorized: Token missing after Bearer');
-    return next(new ApiError('Unauthorized: Missing token', 401));
+    console.warn('❌ Unauthorized: no token in header or cookie');
+    return next(new ApiError('Unauthorized', 401));
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Convention OAuth2: "sub" (subject) ou fallback "id"
+    const userId = decoded.sub || decoded.id;
 
-    // ✅ Log de debug — à désactiver en production
-    console.log('✅ JWT verified. Payload:', decoded);
-
-    // ✅ Convention OAuth2 → `sub` OU fallback `id`
-    req.user = { id: decoded.sub || decoded.id };
-
-    if (!req.user.id) {
+    if (!userId) {
       console.warn('❌ JWT payload missing user id');
-      return next(new ApiError('Unauthorized: Invalid token payload', 401));
+      return next(new ApiError('Unauthorized', 401));
     }
 
+    req.user = { id: userId, ...decoded };
+    // (Debug) désactive en prod si besoin
+    console.log('✅ JWT verified. user_id =', userId);
     next();
   } catch (err) {
     console.error('❌ JWT verification failed:', err.message);
-
-    // Si c’est une expiration → message explicite
     if (err.name === 'TokenExpiredError') {
       return next(new ApiError('Unauthorized: Token expired', 401));
     }
-
-    return next(new ApiError('Unauthorized: Invalid token', 401));
+    return next(new ApiError('Unauthorized', 401));
   }
 };
 

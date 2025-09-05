@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const ApiError = require('../utils/apiError');
 
-// ✅ LOGIN with refresh token
+// ✅ LOGIN with refresh token (set httpOnly cookies)
 const login = async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -30,7 +30,7 @@ const login = async (req, res, next) => {
       return next(new ApiError('Invalid credentials', 401));
     }
 
-    // ✅ Access Token (court)
+    // ✅ Access Token (short)
     const accessToken = jwt.sign(
       { sub: user.id, role: user.role },
       process.env.JWT_SECRET,
@@ -44,19 +44,38 @@ const login = async (req, res, next) => {
       { expiresIn: '7d' }
     );
 
-    // ✅ Sauvegarde du refresh token en BDD
+    // ✅ Save refresh token in DB (optional but you already do it)
     await db.query(
       'UPDATE users SET refresh_token = $1 WHERE id = $2',
       [refreshToken, user.id]
     );
 
-    console.log('✅ Access Token:', accessToken);
-    console.log('✅ Refresh Token:', refreshToken);
+    // 🔐 Cookies options (DEV vs PROD)
+    const isProd = process.env.NODE_ENV === 'production';
+    const accessCookieOpts = {
+      httpOnly: true,
+      secure: isProd,                          // true en prod (HTTPS)
+      sameSite: isProd ? 'none' : 'lax',       // 'none' en prod cross-site
+      maxAge: 2 * 60 * 60 * 1000,              // 2h
+      // domain: 'ton-domaine-back.fr',        // optionnel en prod
+      // path: '/',                            // défaut
+    };
+    const refreshCookieOpts = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,         // 7 jours
+    };
 
-    res.status(200).json({
+    // ✅ Set httpOnly cookies
+    res.cookie('token', accessToken, accessCookieOpts);
+    res.cookie('refresh_token', refreshToken, refreshCookieOpts);
+
+    // (optionnel) garder aussi la réponse JSON
+    return res.status(200).json({
       message: '✅ Login successful',
-      token: accessToken,
-      refreshToken: refreshToken,
+      token: accessToken,          // utile pour debug / Postman
+      refreshToken: refreshToken,  // idem
       email: user.email,
       role: user.role,
     });

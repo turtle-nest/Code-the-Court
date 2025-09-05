@@ -6,12 +6,19 @@ import {
   readableCaseType
 } from '../config/judilibreConfig';
 import { updateDecisionKeywords } from '../services/decisions';
+import {
+  fetchNotesForDecision,
+  createNoteForDecision,
+  updateNote,
+  deleteNote
+} from '../services/notes';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
+
 /**
  * Build an ordered list of text fragments from Judilibre "zones".
- */
+*/
 function linearizeZones(text, zones) {
   if (!text || !zones) return [{ zone: 'full', fragment: text }];
 
@@ -42,7 +49,7 @@ function linearizeZones(text, zones) {
 
 /**
  * Optional: humanize raw zone keys into FR section titles.
- */
+*/
 function labelForZone(zone) {
   const map = {
     introduction: 'Introduction',
@@ -50,6 +57,7 @@ function labelForZone(zone) {
     claims: 'Moyens',
     grounds: 'Motifs',
     device: 'Dispositif',
+    dispositif: 'Dispositif',
     annexes: 'Annexes'
   };
   return map[zone] || zone;
@@ -66,6 +74,11 @@ const DecisionDetailPage = () => {
   const [newKeyword, setNewKeyword] = useState('');
   const [message, setMessage] = useState(null);
   const [sectionedView, setSectionedView] = useState(true); // default to sectioned if zones available
+  const [notes, setNotes] = useState([]);
+  const [notesLoading, setNotesLoading] = useState(true);
+  const [newNote, setNewNote] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
 
   // PDF (archives only)
   const [pdfInfo, setPdfInfo] = useState({
@@ -91,7 +104,7 @@ const DecisionDetailPage = () => {
         ? `/api/decisions/${id}?refresh=1`
         : `/api/decisions/${id}`;
 
-      const res = await fetch(url);
+      const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error(`Erreur API: ${res.status}`);
       const data = await res.json();
       setDecision(data);
@@ -105,6 +118,65 @@ const DecisionDetailPage = () => {
   };
 
   useEffect(() => { fetchDecision(); /* eslint-disable-next-line */ }, [id]);
+
+  useEffect(() => {
+    async function loadNotes() {
+      if (!id) return;
+      try {
+        setNotesLoading(true);
+        const data = await fetchNotesForDecision(id);
+        setNotes(data);
+      } catch (e) {
+        console.warn('[notes] load failed', e);
+        setNotes([]);
+      } finally {
+        setNotesLoading(false);
+      }
+    }
+    loadNotes();
+  }, [id]);
+
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+    try {
+      const created = await createNoteForDecision(id, newNote.trim());
+      setNotes(prev => [created, ...prev]);
+      setNewNote('');
+    } catch (e) {
+      alert('Erreur lors de la création de la note.');
+    }
+  };
+
+  const startEditNote = (note) => {
+    setEditingNoteId(note.id);
+    setEditingContent(note.content);
+  };
+
+  const cancelEditNote = () => {
+    setEditingNoteId(null);
+    setEditingContent('');
+  };
+
+  const handleSaveEditNote = async () => {
+    if (!editingNoteId || !editingContent.trim()) return;
+    try {
+      const updated = await updateNote(editingNoteId, editingContent.trim());
+      setNotes(prev => prev.map(n => n.id === updated.id ? updated : n));
+      cancelEditNote();
+    } catch (e) {
+      alert('Erreur lors de la mise à jour de la note.');
+    }
+  };
+
+  const handleDeleteNote = async (noteId) => {
+    if (!confirm('Supprimer cette note ?')) return;
+    try {
+      await deleteNote(noteId);
+      setNotes(prev => prev.filter(n => n.id !== noteId));
+    } catch (e) {
+      alert('Erreur lors de la suppression de la note.');
+    }
+  };
 
   // Charge les URLs PDF si la décision est une archive
   useEffect(() => {
@@ -359,6 +431,91 @@ const DecisionDetailPage = () => {
 
         {message && (
           <p className="mt-2 font-semibold text-sm text-green-600">{message}</p>
+        )}
+      </div>
+
+      <div className="border rounded p-4 mb-6 bg-white">
+        <h3 className="font-bold mb-3">Mes notes :</h3>
+
+        {/* Create */}
+        <div className="flex flex-col gap-2 mb-4">
+          <textarea
+            className="border rounded px-2 py-1"
+            rows={3}
+            placeholder="Ajouter une note (privée)…"
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+          />
+          <div>
+            <button
+              type="button"
+              onClick={handleAddNote}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              + Ajouter la note
+            </button>
+          </div>
+        </div>
+
+        {/* List */}
+        {notesLoading ? (
+          <p className="text-sm italic">Chargement des notes…</p>
+        ) : notes.length === 0 ? (
+          <p className="text-sm text-gray-500">Aucune note pour l’instant.</p>
+        ) : (
+          <ul className="space-y-3">
+            {notes.map((note) => (
+              <li key={note.id} className="border rounded p-3">
+                {editingNoteId === note.id ? (
+                  <>
+                    <textarea
+                      className="w-full border rounded px-2 py-1 mb-2"
+                      rows={3}
+                      value={editingContent}
+                      onChange={(e) => setEditingContent(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveEditNote}
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                      >
+                        Enregistrer
+                      </button>
+                      <button
+                        onClick={cancelEditNote}
+                        className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <pre className="whitespace-pre-wrap leading-relaxed mb-2">
+                      {note.content}
+                    </pre>
+                    <div className="flex gap-2 text-sm">
+                      <button
+                        onClick={() => startEditNote(note)}
+                        className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                      >
+                        Éditer
+                      </button>
+                      <button
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                      >
+                        Supprimer
+                      </button>
+                      <span className="ml-auto text-gray-500">
+                        {new Date(note.created_at).toLocaleString('fr-FR')}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </>
