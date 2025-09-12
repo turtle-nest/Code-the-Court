@@ -1,0 +1,80 @@
+services:
+  db:
+    image: postgres:16
+    profiles: ["dev", "prod"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-code_the_court}
+      POSTGRES_USER: ${POSTGRES_USER:-nicolas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nicolas} -d ${POSTGRES_DB:-code_the_court}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "5432:5432"
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: ${API_DOCKERFILE:-Dockerfile}
+    profiles: ["dev", "prod"]
+    env_file:
+      - ./backend/.env
+    environment:
+      # In-container DB URL targets service name "db"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nicolas}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-code_the_court}
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]  # expose a /health route in API
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    # DEV: Vite dev server with HMR
+    build:
+      context: ./frontend
+      dockerfile: ${WEB_DOCKERFILE:-Dockerfile}
+    profiles: ["dev"]
+    env_file:
+      - ./frontend/.env
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://localhost:3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+  web_prod:
+    # PROD: Nginx serving built React app
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    profiles: ["prod"]
+    environment:
+      # Used only during build phase in Dockerfile.prod
+      VITE_API_URL: ${PUBLIC_API_URL:-/api}
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

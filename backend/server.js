@@ -2,94 +2,91 @@
 require('dotenv').config();
 
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
-const cookieParser = require('cookie-parser'); // ✅ NEW
-const db = require('./config/db');
-const errorHandler = require('./middlewares/errorHandler');
+const cookieParser = require('cookie-parser');
 
-const uploadsRoot = path.join(process.cwd(), 'uploads');
+const db = require('./config/db');                    // keep your db pool/conn
+const errorHandler = require('./middlewares/errorHandler'); // keep your error handler
 
-// Routers
+// Routers (keep only what exists in your repo)
 const notesRouter = require('./routes/notes');
 const archivesRouter = require('./routes/archives');
-const decisionsRouter = require('./routes/decisions');
-const authRouter = require('./routes/auth');
-const adminRouter = require('./routes/admin');
-const statsRouter = require('./routes/stats');
-const profileRouter = require('./routes/profile');
-const metadataRouter = require('./routes/metadata');
-
-// Auth middleware
-const auth = require('./middlewares/authMiddleware'); // ✅ NEW
 
 const app = express();
+
+/* ----------------------------- Env & constants ---------------------------- */
 const PORT = process.env.PORT || 3000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const isDev = process.env.NODE_ENV !== 'production';
 
-// ---------- Core middlewares ----------
-app.use(express.urlencoded({ extended: true })); // pour formulaires simples
-app.use(express.json());                         // JSON parser
-app.use(cookieParser());                         // ✅ nécessaire pour lire req.cookies.token
+// Centralized uploads path (Docker-safe)
+const uploadsRoot = path.resolve(process.cwd(), 'uploads');
 
-// CORS (cookies cross-origin)
-app.use(
-  cors({
-    origin: FRONTEND_URL,        // EXACTEMENT l’origin du front
-    credentials: true,           // ✅ indispensable pour envoyer/recevoir les cookies
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
-
-// ---------- Static ----------
-app.use('/uploads', express.static(uploadsRoot, {
-  fallthrough: true,
-  dotfiles: 'ignore',
-  index: false,
-}));
-
-// ---------- Debug (temporaire) ----------
-app.get('/api/debug/echo', (req, res) => {
-  res.json({
-    origin: req.headers.origin,
-    cookiesHeader: req.headers.cookie || null,
-    parsedCookies: req.cookies || null,
-    hasAuthHeader: !!req.headers.authorization,
-  });
-});
-app.get('/api/debug/whoami', auth, (req, res) => {
-  res.json({ user: req.user || null });
-});
-
-// ---------- API routes ----------
-app.use('/api/archives', archivesRouter);  // si besoin d’auth, ajoute `auth` ici aussi
-app.use('/api/decisions', decisionsRouter);
-app.use('/api', authRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/stats', statsRouter);
-app.use('/api/notes', auth, notesRouter);  // ✅ protégé + cookie prêt (cookie-parser)
-app.use('/api/profile', profileRouter);
-app.use('/api/metadata', metadataRouter);
-
-// Root ping
-app.get('/', (req, res) => {
-  res.send('SocioJustice API is running!');
-});
-
-// Errors
-app.use(errorHandler);
-
-// ---------- Boot ----------
-if (require.main === module) {
-  db.query('SELECT NOW()')
-    .then(r => console.log('📅 DB Time:', r.rows[0].now))
-    .catch(err => console.error('❌ DB Error:', err));
-
-  app.listen(PORT, () => {
-    console.log(`✅ Server is running on http://localhost:${PORT}`);
-    console.log(`🌐 CORS origin: ${FRONTEND_URL}`);
-  });
+/* --------------------------------- CORS ---------------------------------- */
+// Allow Vite dev server with credentials during development only
+if (isDev) {
+  app.use(
+    cors({
+      origin: FRONTEND_URL,     // must exactly match your front dev origin
+      credentials: true,        // send/receive cookies
+      methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    })
+  );
 }
 
-module.exports = app;
+/* ------------------------------ Middlewares ------------------------------ */
+app.use(cookieParser());
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+/* --------------------------- Ensure uploads dir --------------------------- */
+try {
+  fs.mkdirSync(uploadsRoot, { recursive: true });
+} catch (err) {
+  console.error('Failed to ensure uploads directory:', err);
+}
+
+// (Optional) expose uploads for local previews; disable if not desired
+app.use('/uploads', express.static(uploadsRoot));
+
+/* -------------------------------- Health --------------------------------- */
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
+
+/* --------------------------------- Routes -------------------------------- */
+app.use('/api/notes', notesRouter);
+app.use('/api/archives', archivesRouter);
+// Add your other routers here, e.g.:
+// app.use('/api/decisions', decisionsRouter);
+// app.use('/api/auth', authRouter);
+// app.use('/api/users', usersRouter);
+
+/* ------------------------------ 404 handler ------------------------------ */
+app.use((req, res, next) => {
+  if (res.headersSent) return next();
+  res.status(404).json({ error: 'Not Found', path: req.originalUrl });
+});
+
+/* --------------------------- Error middleware ---------------------------- */
+app.use(errorHandler);
+
+/* ------------------------------- Start server ---------------------------- */
+app.listen(PORT, async () => {
+  console.log(`✅ API listening on http://localhost:${PORT}`);
+  console.log(`🌐 CORS ${isDev ? 'enabled (dev)' : 'disabled (prod)'}; FRONTEND_URL=${FRONTEND_URL}`);
+  console.log(`📁 uploads: ${uploadsRoot}`);
+
+  // Optional DB ping for visibility (safe no-op if db.query not available)
+  if (db && typeof db.query === 'function') {
+    try {
+      const r = await db.query('SELECT NOW() AS now');
+      console.log('📅 DB Time:', r.rows?.[0]?.now);
+    } catch (err) {
+      console.error('❌ DB Error:', err?.message || err);
+    }
+  }
+});
