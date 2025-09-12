@@ -4,6 +4,9 @@
   "description": "Portfolio project",
   "main": "index.js",
   "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "build": "echo \"No backend build step\"",
     "test": "jest --detectOpenHandles",
     "test:api": "newman run tests/postman/Code-the-Court.postman_collection.json",
     "db:init": "psql -U postgres -d code_the_court -f migrations/001_init_db.sql",
@@ -39,6 +42,7 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
+    "nodemon": "^3.1.10",
     "supertest": "^7.1.1"
   }
 }
