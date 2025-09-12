@@ -7,8 +7,10 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "build": "echo \"No backend build step\"",
-    "test": "jest --detectOpenHandles",
-    "test:api": "newman run tests/postman/Code-the-Court.postman_collection.json",
+    "test": "jest --runInBand --detectOpenHandles",
+    "test:jest": "jest --runInBand",
+    "test:postman": "newman run ./tests/postman/Code-the-Court.postman_collection.json -e ./tests/postman/local.postman_environment.json --reporters cli",
+    "test:all": "npm run test:jest && npm run test:postman",
     "db:init": "psql -U postgres -d code_the_court -f migrations/001_init_db.sql",
     "db:create": "createdb -U postgres code_the_court",
     "db:seed": "psql -U postgres -d code_the_court -f migrations/002_seed_data.sql",
@@ -42,6 +44,7 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
+    "newman": "^6.2.1",
     "nodemon": "^3.1.10",
     "supertest": "^7.1.1"
   }
