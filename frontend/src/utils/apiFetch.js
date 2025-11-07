@@ -1,6 +1,6 @@
 // ✅ src/utils/apiFetch.js
 
-export async function apiFetch(url, options = {}) {
+export async function apiFetch(path, options = {}) {
   const token = localStorage.getItem('token');
   const headers = new Headers(options.headers || {});
 
@@ -10,9 +10,20 @@ export async function apiFetch(url, options = {}) {
   }
 
   // ➜ Force JSON sauf si c'est un FormData
-  if (options.body && !headers.has('Content-Type') && !(options.body instanceof FormData)) {
+  if (
+    options.body &&
+    !headers.has('Content-Type') &&
+    !(options.body instanceof FormData)
+  ) {
     headers.set('Content-Type', 'application/json');
   }
+
+  // ✅ Définit automatiquement le backend comme base si le proxy Vite ne marche pas
+  const baseURL =
+    import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+  // ✅ Si le chemin ne commence pas par http, on le complète
+  const url = path.startsWith('http') ? path : `${baseURL}${path}`;
 
   const fetchOptions = {
     ...options,

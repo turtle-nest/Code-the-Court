@@ -1,8 +1,10 @@
 // src/components/Header.jsx
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function Header({ title }) {
+  const navigate = useNavigate();
+
   const token = localStorage.getItem('token');
   const userEmail = localStorage.getItem('userEmail');
   const userRole = localStorage.getItem('role');
@@ -11,49 +13,62 @@ function Header({ title }) {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('role');
-    window.location.href = '/'; // ✅ Redirige vers tableau de bord public
+    navigate('/');
+  };
+
+  const bgStyle = {
+    backgroundImage: "url('/headerBg.png')",
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
   };
 
   return (
-    <header className="relative bg-blue-800 text-white px-8 h-32 flex items-center justify-between">
-      {/* Logo à gauche */}
-      <div className="flex items-center h-full">
-        <Link to="/">
-          <img
-            src="/logo.png"
-            alt="SocioJustice Logo"
-            className="h-full max-h-24 w-auto object-contain"
-          />
-        </Link>
-      </div>
+    <header
+      role="banner"
+      className="relative z-30 w-full h-24 md:h-28 text-white shadow-md shadow-blue-100"
+      style={bgStyle}
+      aria-label="Bandeau du site"
+    >
+      <div className="absolute inset-0 z-0 bg-black/20" />
 
-      {/* Titre centré */}
-      {title && (
-        <h1 className="absolute left-1/2 transform -translate-x-1/2 text-4xl font-bold text-white">
-          {title}
-        </h1>
-      )}
+      <div className="absolute inset-0 z-10">
+        <div className="h-full w-full px-6 md:px-8">
+          <div className="h-full grid grid-cols-[1fr_auto_1fr] items-center">
+            <div aria-hidden="true" />
 
-      {/* Zone utilisateur à droite */}
-      <div className="flex items-center gap-4 text-sm">
-        {!token ? (
-          <Link
-            to="/login"
-            className="bg-white text-blue-800 px-4 py-2 rounded hover:bg-gray-100 transition"
-          >
-            Connexion
-          </Link>
-        ) : (
-          <>
-            <span>{userEmail} ({userRole})</span>
-            <button
-              onClick={handleLogout}
-              className="bg-white text-blue-800 px-4 py-2 rounded hover:bg-gray-100 transition"
-            >
-              Se déconnecter
-            </button>
-          </>
-        )}
+            <div className="flex items-center justify-center min-w-0">
+              {title ? (
+                <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-center truncate">
+                  {title}
+                </h1>
+              ) : null}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 md:gap-4 text-sm">
+              {!token ? (
+                <Link
+                  to="/login"
+                  className="bg-white text-blue-800 px-3 py-2 rounded hover:bg-gray-100 transition"
+                >
+                  Connexion
+                </Link>
+              ) : (
+                <>
+                  <span className="hidden md:inline truncate max-w-[240px]">
+                    {userEmail} ({userRole})
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-white text-blue-800 px-3 py-2 rounded hover:bg-gray-100 transition"
+                  >
+                    Se déconnecter
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   );

@@ -1,3 +1,4 @@
+// backend/controllers/usersController.js
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
 const ApiError = require('../utils/apiError');
