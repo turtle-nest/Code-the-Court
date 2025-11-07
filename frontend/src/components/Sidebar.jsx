@@ -25,10 +25,19 @@ const Sidebar = () => {
   const role = localStorage.getItem('role');
 
   return (
-    // Colonne grise uniforme (hauteur = celle du plus grand élément du flex parent)
-    <aside className="w-64 bg-gray-200 border-r border-gray-300">
-      {/* Contenu du menu collé sous le header */}
-      <nav className="sticky top-24 md:top-28 px-4 py-6 flex flex-col gap-3">
+    <aside
+      className={[
+        'w-64 shrink-0 rounded-2xl border border-blue-100 bg-[#f2f6fa] p-4',
+        // Make the sidebar stick under the header
+        'sticky top-24 md:top-28',
+        // Full column height = viewport minus header height
+        'h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)]',
+        // Scroll inside the sidebar if content overflows
+        'overflow-y-auto'
+      ].join(' ')}
+      aria-label="Menu latéral"
+    >
+      <nav className="flex flex-col gap-3">
         {pathname === '/login' && (
           <>
             <Item to="/register" label="Créer un compte" active={pathname === '/register'} />
