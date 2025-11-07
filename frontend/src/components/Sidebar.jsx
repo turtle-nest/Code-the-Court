@@ -25,15 +25,14 @@ const Sidebar = () => {
   const role = localStorage.getItem('role');
 
   return (
-    <div className="w-64 shrink-0 bg-gray-200 border-r border-gray-300">
+    <div className="w-64 shrink-0">
       <aside
         role="navigation"
         aria-label="Navigation latérale"
         className="
-          px-4 py-6
-          flex flex-col gap-3
           sticky top-24 md:top-28
-          self-start
+          bg-gray-200 border-r border-gray-300
+          px-4 py-6 flex flex-col gap-3
         "
       >
         {pathname === '/login' && (
