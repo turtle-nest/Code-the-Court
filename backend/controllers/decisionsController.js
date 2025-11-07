@@ -162,7 +162,7 @@ const getAllDecisions = async (req, res, next) => {
     `;
 
     const values = [];
-    const add = (cond) => baseQuery += ` AND ${cond}`;
+    const add = (cond) => (baseQuery += ` AND ${cond}`);
 
     if (norm.exact_date) {
       values.push(norm.exact_date);
@@ -189,12 +189,12 @@ const getAllDecisions = async (req, res, next) => {
     if (norm.keywords) {
       const terms = String(norm.keywords)
         .split(',')
-        .map(s => s.trim())
+        .map((s) => s.trim())
         .filter(Boolean);
 
       if (terms.length > 0) {
         const startIdx = values.length + 1;
-        terms.forEach(term => values.push(`%${term}%`));
+        terms.forEach((term) => values.push(`%${term}%`));
         const ors = terms
           .map((_, i) => `t2.label ILIKE $${startIdx + i}`)
           .join(' OR ');
@@ -214,7 +214,7 @@ const getAllDecisions = async (req, res, next) => {
     if (norm.source) {
       const sources = Array.isArray(norm.source)
         ? norm.source
-        : String(norm.source).split(',').map(s => s.trim()).filter(Boolean);
+        : String(norm.source).split(',').map((s) => s.trim()).filter(Boolean);
 
       if (sources.length > 0) {
         const startIdx = values.length + 1;
@@ -369,7 +369,7 @@ const getJurisdictions = async (req, res, next) => {
     const result = await db.query(
       'SELECT DISTINCT jurisdiction FROM decisions ORDER BY jurisdiction;'
     );
-    const jurisdictions = result.rows.map(row => row.jurisdiction);
+    const jurisdictions = result.rows.map((row) => row.jurisdiction);
     res.status(200).json(jurisdictions);
   } catch (error) {
     console.error('❌ Error fetching jurisdictions:', error);
@@ -385,7 +385,7 @@ const getCaseTypes = async (req, res, next) => {
     const result = await db.query(
       'SELECT DISTINCT case_type FROM decisions ORDER BY case_type;'
     );
-    const caseTypes = result.rows.map(row => row.case_type);
+    const caseTypes = result.rows.map((row) => row.case_type);
     res.status(200).json(caseTypes);
   } catch (error) {
     console.error('❌ Error fetching case types:', error);
@@ -444,7 +444,14 @@ const getDecisionById = async (req, res, next) => {
 
     let row = rows[0];
 
-    console.log('[DecisionDetail][before] contentLen:', (row.content || '').length, 'src:', row.source, 'extId:', row.external_id);
+    console.log(
+      '[DecisionDetail][before] contentLen:',
+      (row.content || '').length,
+      'src:',
+      row.source,
+      'extId:',
+      row.external_id
+    );
 
     const forceRefresh = req.query.refresh === '1';
     if (forceRefresh && row.source === 'judilibre' && row.external_id) {
@@ -452,7 +459,10 @@ const getDecisionById = async (req, res, next) => {
         const full = await fetchDecisionById(row.external_id);
         const fullText = (full.text || full.summary || '').trim();
         if (fullText) {
-          await db.query('UPDATE decisions SET content = $1 WHERE id = $2::uuid', [fullText, row.id]);
+          await db.query('UPDATE decisions SET content = $1 WHERE id = $2::uuid', [
+            fullText,
+            row.id
+          ]);
           row.content = fullText;
         }
         if (full?.zones) row.zones = full.zones;
@@ -466,16 +476,18 @@ const getDecisionById = async (req, res, next) => {
 
     row = await ensureFullText(row);
 
-    console.log('[DecisionDetail][after] contentLen:', (row.content || '').length, 'hasZones:', !!row.zones);
+    console.log(
+      '[DecisionDetail][after] contentLen:',
+      (row.content || '').length,
+      'hasZones:',
+      !!row.zones
+    );
 
     const filePath = row.file_path || null;
-    const isPdf = row.source === 'archive'
-      && !!filePath
-      && filePath.toLowerCase().endsWith('.pdf');
+    const isPdf =
+      row.source === 'archive' && !!filePath && filePath.toLowerCase().endsWith('.pdf');
 
-    const base =
-      process.env.BACKEND_URL
-      || `${req.protocol}://${req.get('host')}`;
+    const base = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
 
     row.is_pdf = isPdf;
 
@@ -483,8 +495,12 @@ const getDecisionById = async (req, res, next) => {
       const fileTok = signArchiveLink(row.archive_id, 'file');
       const dlTok = signArchiveLink(row.archive_id, 'download');
 
-      row.file_url = `${base}/api/archives/${row.archive_id}/file?token=${encodeURIComponent(fileTok)}`;
-      row.download_url = `${base}/api/archives/${row.archive_id}/download?token=${encodeURIComponent(dlTok)}`;
+      row.file_url = `${base}/api/archives/${row.archive_id}/file?token=${encodeURIComponent(
+        fileTok
+      )}`;
+      row.download_url = `${base}/api/archives/${row.archive_id}/download?token=${encodeURIComponent(
+        dlTok
+      )}`;
     } else {
       row.file_url = null;
       row.download_url = null;
@@ -496,6 +512,33 @@ const getDecisionById = async (req, res, next) => {
   } catch (err) {
     console.error('❌ Error fetching decision by id:', err);
     next(new ApiError('Failed to fetch decision', 500));
+  }
+};
+
+/**
+ * GET /api/decisions/stats
+ * (simple stats so the router can mount safely)
+ */
+const getDecisionsStats = async (req, res, next) => {
+  try {
+    const { rows: totalRows } = await db.query(
+      'SELECT COUNT(*)::int AS total FROM decisions;'
+    );
+    const { rows: byJurisdiction } = await db.query(
+      'SELECT jurisdiction, COUNT(*)::int AS count FROM decisions GROUP BY jurisdiction ORDER BY count DESC;'
+    );
+    const { rows: byYear } = await db.query(
+      "SELECT EXTRACT(YEAR FROM date)::int AS year, COUNT(*)::int AS count FROM decisions WHERE date IS NOT NULL GROUP BY year ORDER BY year DESC;"
+    );
+
+    res.status(200).json({
+      total: totalRows[0]?.total || 0,
+      byJurisdiction,
+      byYear
+    });
+  } catch (error) {
+    console.error('❌ Error fetching decisions stats:', error);
+    next(new ApiError('Failed to fetch decisions stats', 500));
   }
 };
 
