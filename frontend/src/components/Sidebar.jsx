@@ -1,4 +1,3 @@
-// src/components/Sidebar.jsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -7,7 +6,8 @@ const Item = ({ to, label, active }) => (
     to={to}
     aria-current={active ? 'page' : undefined}
     className={[
-      'block w-full rounded-xl px-4 py-3 text-sm font-medium transition',
+      // height x2.5: bigger vertical padding + slightly larger text
+      'block w-full rounded-xl px-4 py-8 text-base font-medium transition',
       'bg-[#1552a1] text-white',
       'ring-1 ring-[#1e4ed8]/20 shadow-sm',
       'hover:bg-[#1d4ed8] hover:ring-[#1d4ed8]/40',
@@ -28,11 +28,8 @@ const Sidebar = () => {
     <aside
       className={[
         'w-64 shrink-0 rounded-2xl border border-blue-100 bg-[#f2f6fa] p-4',
-        // Make the sidebar stick under the header
         'sticky top-24 md:top-28',
-        // Full column height = viewport minus header height
         'h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)]',
-        // Scroll inside the sidebar if content overflows
         'overflow-y-auto'
       ].join(' ')}
       aria-label="Menu latéral"
@@ -61,7 +58,7 @@ const Sidebar = () => {
                 {pathname !== '/add-archive' && (
                   <Item
                     to="/add-archive"
-                    label="Importer une archive PDF"
+                    label="Ajouter une archive"
                     active={pathname === '/add-archive'}
                   />
                 )}
@@ -69,7 +66,7 @@ const Sidebar = () => {
                 {role === 'admin' && pathname !== '/archives' && (
                   <Item
                     to="/archives"
-                    label="Importer des décisions (Judilibre)"
+                    label="Décisions Judilibre"
                     active={pathname === '/archives'}
                   />
                 )}
@@ -77,7 +74,7 @@ const Sidebar = () => {
             )}
 
             {pathname !== '/search' && (
-              <Item to="/search" label="Rechercher dans le corpus" active={pathname === '/search'} />
+              <Item to="/search" label="Recherche corpus" active={pathname === '/search'} />
             )}
           </>
         )}

@@ -1,4 +1,3 @@
-// frontend/src/pages/Home.jsx
 import React, { useEffect, useState } from 'react';
 import Stat from '../components/Stat';
 import { apiFetch } from '../utils/apiFetch';
@@ -6,8 +5,8 @@ import { apiFetch } from '../utils/apiFetch';
 const Home = () => {
   const [totalDecisions, setTotalDecisions] = useState(0);
   const [totalArchives, setTotalArchives] = useState(0);
-  const [lastImportCount, setLastImportCount] = useState(0); // ✅ ajouté
-  const [lastImportDate, setLastImportDate] = useState('');  // ✅ ajouté
+  const [lastImportCount, setLastImportCount] = useState(0);
+  const [lastImportDate, setLastImportDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -16,8 +15,8 @@ const Home = () => {
       .then((data) => {
         setTotalDecisions(data.decisions_count || 0);
         setTotalArchives(data.archives_count || 0);
-        setLastImportCount(data.lastImportCount || 0);  // ✅ sécurisé
-        setLastImportDate(data.lastImportDate || '');   // ✅ sécurisé
+        setLastImportCount(data.lastImportCount || 0);
+        setLastImportDate(data.lastImportDate || '');
         setLoading(false);
       })
       .catch((err) => {
@@ -30,7 +29,8 @@ const Home = () => {
   return (
     <div className="flex flex-col justify-between h-[calc(100vh-8rem)] px-8">
       <div>
-        <p className="italic text-lg mb-10">
+        {/* moved a bit lower */}
+        <p className="italic text-lg mt-6 md:mt-8 mb-10">
           Bienvenue dans l’interface de gestion et d’analyse des décisions de justice.
         </p>
 
