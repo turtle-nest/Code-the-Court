@@ -1,8 +1,12 @@
+// backend/routes/index.js
 const { Router } = require('express');
 const db = require('../config/db');
 
 const usersRouter = require('./users');
-const metadataRouter = require('./metadata'); // NEW ✅
+const metadataRouter = require('./metadata');
+const decisionsRouter = require('./decisions'); // ➜ add decisions sub-router
+const archivesRouter = require('./archives');   // ➜ add archives sub-router
+
 const { login, refreshToken } = require('../controllers/authController');
 const { registerUser } = require('../controllers/usersController');
 
@@ -13,7 +17,7 @@ api.post('/login', login);
 api.post('/refresh', refreshToken);
 api.post('/register', registerUser);
 
-/* --------------------------------- /api/stats ------------------------------ */
+/* --------------------------------- /stats ---------------------------------- */
 api.get('/stats', async (req, res) => {
   try {
     const { rows: d } = await db.query('SELECT COUNT(*)::int AS c FROM decisions');
@@ -38,12 +42,19 @@ api.get('/stats', async (req, res) => {
 
     return res.json({ decisions_count, archives_count, lastImportCount, lastImportDate });
   } catch (e) {
-    return res.json({ decisions_count: 0, archives_count: 0, lastImportCount: 0, lastImportDate: null });
+    return res.json({
+      decisions_count: 0,
+      archives_count: 0,
+      lastImportCount: 0,
+      lastImportDate: null
+    });
   }
 });
 
-/* -------------------------------- Sub-routers ------------------------------- */
-api.use('/metadata', metadataRouter); // NEW ✅  -> /api/metadata
-api.use('/users', usersRouter);
+/* -------------------------------- Sub-routers ------------------------------ */
+api.use('/metadata', metadataRouter);   // -> /metadata/*
+api.use('/users', usersRouter);         // -> /users/*
+api.use('/decisions', decisionsRouter); // -> /decisions/*  (search, import, details)
+api.use('/archives', archivesRouter);   // -> /archives/*   (PDF upload/stream)
 
 module.exports = api;

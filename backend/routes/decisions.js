@@ -40,7 +40,7 @@ router.get('/import/mock', (req, res, next) => {
 });
 
 router.get('/stats', getDecisionsStats);
-router.get('/juridictions', getJurisdictions);
+router.get('/jurisdictions', getJurisdictions);
 router.get('/case-types', getCaseTypes);
 
 // ✅ Routes dynamiques TOUT À LA FIN

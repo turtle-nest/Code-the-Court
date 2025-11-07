@@ -1,52 +1,63 @@
-// ✅ src/utils/apiFetch.js
+// src/utils/apiFetch.js
+// Robust HTTP helper. Keeps "/api/..." prefix intact.
+// Base URL comes from VITE_API_URL (e.g. http://localhost:3000)
+
+function buildBase() {
+  const base = (import.meta.env.VITE_API_URL || 'http://localhost:3000').trim();
+  return base.replace(/\/+$/, ''); // remove trailing slash
+}
+
+function normalizePath(p) {
+  if (!p) return '/';
+  // Absolute URL passthrough
+  if (typeof p === 'string' && /^https?:\/\//i.test(p)) return p;
+
+  // Ensure exactly one leading slash; collapse duplicate slashes
+  let path = ('/' + String(p)).replace(/\/+/g, '/');
+
+  // DO NOT strip "/api" anymore. We keep it by design.
+  // path = path.replace(/^\/api(\/|$)/, '/'); // ❌ removed on purpose
+
+  return path;
+}
 
 export async function apiFetch(path, options = {}) {
+  const finalPath = normalizePath(path);
+  const isAbsolute = /^https?:\/\//i.test(finalPath);
+  const BASE = buildBase();
+  const url = isAbsolute ? finalPath : `${BASE}${finalPath}`;
+
   const token = localStorage.getItem('token');
   const headers = new Headers(options.headers || {});
 
-  // ➜ Ajoute ton JWT SocioJustice côté frontend
-  if (token) {
+  // Attach auth token if present
+  if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  // ➜ Force JSON sauf si c'est un FormData
-  if (
-    options.body &&
-    !headers.has('Content-Type') &&
-    !(options.body instanceof FormData)
-  ) {
+  // Auto JSON unless sending FormData or already set
+  const isFormData = options.body instanceof FormData;
+  if (options.body && !isFormData && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
-  // ✅ Définit automatiquement le backend comme base si le proxy Vite ne marche pas
-  const baseURL =
-    import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-  // ✅ Si le chemin ne commence pas par http, on le complète
-  const url = path.startsWith('http') ? path : `${baseURL}${path}`;
-
-  const fetchOptions = {
+  const res = await fetch(url, {
+    credentials: 'include',
     ...options,
     headers,
-    credentials: 'include', // ➜ optionnel : force envoi cookie si nécessaire
-  };
+  });
 
-  try {
-    const res = await fetch(url, fetchOptions);
+  const ct = res.headers.get('content-type') || '';
+  const payload = ct.includes('application/json')
+    ? await res.json().catch(() => ({}))
+    : await res.text();
 
-    // Essaye de parser JSON, fallback objet vide
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        console.warn('[🔒] Session expirée ou accès refusé.');
-      }
-      throw new Error(data.message || data.error || 'Request failed');
-    }
-
-    return data;
-  } catch (err) {
-    console.error('[❌ apiFetch] Request failed:', err.message);
-    throw err;
+  if (!res.ok) {
+    const msg =
+      (payload && (payload.message || payload.error)) ||
+      `HTTP ${res.status} ${res.statusText || ''}`.trim();
+    throw new Error(msg);
   }
+
+  return payload;
 }
