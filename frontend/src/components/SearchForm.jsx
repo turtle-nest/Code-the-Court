@@ -46,7 +46,9 @@ export default function SearchForm({ onSearch, jurisdictions, caseTypes }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl">
-      <p className="italic mb-2">Rechercher dans le corpus selon les critères suivants :</p>
+      <p className="mb-8 text-lg italic text-gray-800 tracking-tight">
+        Rechercher dans le corpus selon les critères suivants :
+      </p>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <select

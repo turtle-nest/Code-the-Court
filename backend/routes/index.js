@@ -3,6 +3,7 @@ const { Router } = require('express');
 const db = require('../config/db');
 
 const usersRouter = require('./users');
+const statsRouter = require('./stats');
 const metadataRouter = require('./metadata');
 const decisionsRouter = require('./decisions'); // ➜ add decisions sub-router
 const archivesRouter = require('./archives');   // ➜ add archives sub-router
@@ -53,7 +54,8 @@ api.get('/stats', async (req, res) => {
 
 /* -------------------------------- Sub-routers ------------------------------ */
 api.use('/metadata', metadataRouter);   // -> /metadata/*
-api.use('/users', usersRouter);         // -> /users/*
+api.use('/users', usersRouter);
+api.use('/stats', statsRouter);         // -> /users/*
 api.use('/decisions', decisionsRouter); // -> /decisions/*  (search, import, details)
 api.use('/archives', archivesRouter);   // -> /archives/*   (PDF upload/stream)
 

@@ -92,7 +92,7 @@ function DecisionsPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Importer depuis Judilibre</h1>
+      <h1 className="text-lg font-semibold mb-4">Importer depuis Judilibre</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
         <div>

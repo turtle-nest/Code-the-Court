@@ -9,6 +9,7 @@ const {
   getAllArchives,
   getArchiveMeta,
   getArchiveFile,
+  deleteArchive, // ⬅️ NEW
 } = require('../controllers/archivesController');
 
 // List archives (optional)
@@ -58,5 +59,8 @@ router.post(
   // If you have input validation, keep it here (e.g., validateCreateArchive)
   createArchive
 );
+
+// ⬇️ NEW: Delete archive
+router.delete('/:id', authMiddleware, deleteArchive);
 
 module.exports = router;

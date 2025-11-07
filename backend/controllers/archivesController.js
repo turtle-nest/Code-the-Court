@@ -1,6 +1,7 @@
 // backend/controllers/archivesController.js
 // All code & comments in English (project rule).
 const fs = require('fs');
+const fsp = require('fs/promises');
 const path = require('path');
 const db = require('../config/db');
 const ApiError = require('../utils/apiError');
@@ -14,15 +15,15 @@ function buildArchiveUrls(archiveId) {
   const base = `/api/archives/${archiveId}/file`;
   return {
     is_pdf: true,
-    file_url: base,                   // for <iframe> inline preview
-    download_url: `${base}?download=1`, // for the "Download" button
+    file_url: base,                      // for <iframe> inline preview
+    download_url: `${base}?download=1`,  // for the "Download" button
   };
 }
 
 /**
  * POST /api/archives
  * Creates an archive + a mirror decision (source='archive') in a single transaction.
- * Requires: auth, multer upload.single('pdf')
+ * Requires: auth, multer upload.single('pdf') or fields('pdf'|'file')
  */
 const createArchive = async (req, res, next) => {
   const client = await db.connect();
@@ -34,14 +35,14 @@ const createArchive = async (req, res, next) => {
     const user_id = req.user.id;
 
     if (!title) return next(new ApiError('Title is required', 400));
-    if (!file) return next(new ApiError('PDF file is required (field name: "pdf")', 400));
+    if (!file) return next(new ApiError('PDF file is required (field name: "pdf" or "file")', 400));
 
     // Normalize and constrain file path under uploads/
     const absoluteFilePath = path.resolve(file.path);
     if (!absoluteFilePath.startsWith(uploadsRoot)) {
       return next(new ApiError('Invalid upload location', 400));
     }
-    const relativePath = path.relative(uploadsRoot, absoluteFilePath); // ex: "archives/2025-09-05_abc.pdf"
+    const relativePath = path.relative(uploadsRoot, absoluteFilePath); // e.g. "archives/2025-09-05_abc.pdf"
 
     await client.query('BEGIN');
 
@@ -207,9 +208,65 @@ const getArchiveFile = async (req, res, next) => {
   }
 };
 
+/**
+ * DELETE /api/archives/:id
+ * - Deletes decisions where decisions.archive_id = :id
+ * - Deletes the archive row
+ * - Unlinks the physical PDF file (best-effort after COMMIT)
+ */
+const deleteArchive = async (req, res, next) => {
+  const { id } = req.params;
+  const client = await db.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Fetch archive (to know the file to unlink)
+    const { rows: archRows } = await client.query(
+      `SELECT id, file_path FROM archives WHERE id = $1`,
+      [id]
+    );
+    if (archRows.length === 0) {
+      await client.query('ROLLBACK');
+      return next(new ApiError('Archive not found', 404));
+    }
+    const archive = archRows[0];
+
+    // Delete mirror decisions referencing this archive
+    await client.query(`DELETE FROM decisions WHERE archive_id = $1`, [id]);
+
+    // Delete archive row
+    await client.query(`DELETE FROM archives WHERE id = $1`, [id]);
+
+    await client.query('COMMIT');
+
+    // Best-effort file unlink after commit
+    if (archive.file_path) {
+      try {
+        const safeRel = archive.file_path.replace(/^[/\\]+/, '');
+        const abs = path.resolve(uploadsRoot, safeRel);
+        if ((abs + path.sep).startsWith(uploadsRoot + path.sep) || abs === uploadsRoot) {
+          await fsp.unlink(abs);
+        }
+      } catch (e) {
+        console.warn('[archives] unlink failed:', e.message);
+      }
+    }
+
+    return res.status(204).send();
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error deleting archive:', err);
+    return next(new ApiError('Failed to delete archive', 500));
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   createArchive,
   getAllArchives,
   getArchiveMeta,
   getArchiveFile,
+  deleteArchive, // ⬅️ export
 };

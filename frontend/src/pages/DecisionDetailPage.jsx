@@ -12,6 +12,7 @@ import {
   updateNote,
   deleteNote
 } from '../services/notes';
+import { deleteArchiveById } from '../services/archives';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -62,6 +63,25 @@ function labelForZone(zone) {
   return map[zone] || zone;
 }
 
+/**
+ * Transform plain text to clean paragraphs.
+ * Split on double line breaks; keep single line breaks inside a paragraph.
+ */
+function renderParagraphs(text) {
+  if (!text) return null;
+  const blocks = String(text).trim().split(/\n{2,}/g);
+  return blocks.map((block, i) => (
+    <p key={i} className="mb-4">
+      {block.split(/\n/g).map((line, j) => (
+        <span key={j}>
+          {line}
+          {j < block.split(/\n/g).length - 1 && <br />}
+        </span>
+      ))}
+    </p>
+  ));
+}
+
 const DecisionDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -79,6 +99,10 @@ const DecisionDetailPage = () => {
   const [newNote, setNewNote] = useState('');
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingContent, setEditingContent] = useState('');
+
+  // Reading comfort
+  const [readingMode, setReadingMode] = useState(true); // NEW: “Mode lecture”
+  const [fontScale, setFontScale] = useState(1); // NEW: adjustable font size (×0.9–1.2)
 
   // PDF (archives only)
   const [pdfInfo, setPdfInfo] = useState({
@@ -122,7 +146,6 @@ const DecisionDetailPage = () => {
       if (!res.ok) throw new Error(`Erreur API: ${res.status}`);
       const data = await res.json();
 
-      // normalize keywords
       const normalizedKeywords = normalizeKeywords(data.keywords);
       setDecision({ ...data, keywords: normalizedKeywords });
     } catch (err) {
@@ -134,7 +157,10 @@ const DecisionDetailPage = () => {
     }
   };
 
-  useEffect(() => { fetchDecision(); /* eslint-disable-next-line */ }, [id]);
+  useEffect(() => {
+    fetchDecision();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   useEffect(() => {
     async function loadNotes() {
@@ -157,7 +183,7 @@ const DecisionDetailPage = () => {
     if (!newNote.trim()) return;
     try {
       const created = await createNoteForDecision(id, newNote.trim());
-      setNotes(prev => [created, ...prev]);
+      setNotes((prev) => [created, ...prev]);
       setNewNote('');
     } catch (e) {
       alert('Erreur lors de la création de la note.');
@@ -178,7 +204,7 @@ const DecisionDetailPage = () => {
     if (!editingNoteId || !editingContent.trim()) return;
     try {
       const updated = await updateNote(editingNoteId, editingContent.trim());
-      setNotes(prev => prev.map(n => n.id === updated.id ? updated : n));
+      setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
       cancelEditNote();
     } catch (e) {
       alert('Erreur lors de la mise à jour de la note.');
@@ -189,7 +215,7 @@ const DecisionDetailPage = () => {
     if (!confirm('Supprimer cette note ?')) return;
     try {
       await deleteNote(noteId);
-      setNotes(prev => prev.filter(n => n.id !== noteId));
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
     } catch (e) {
       alert('Erreur lors de la suppression de la note.');
     }
@@ -201,7 +227,6 @@ const DecisionDetailPage = () => {
       setPdfInfo({ isPdf: false, fileUrl: null, downloadUrl: null });
       if (!decision) return;
 
-      // 1) L’API decision renvoie déjà file_url/download_url/is_pdf (par ex.)
       if (decision.is_pdf && (decision.file_url || decision.download_url)) {
         setPdfInfo({
           isPdf: true,
@@ -211,12 +236,12 @@ const DecisionDetailPage = () => {
         return;
       }
 
-      // 2) Sinon, si c’est une archive, on appelle /api/archives/:archive_id
       if (decision.source === 'archive' && decision.archive_id) {
         try {
-          const res = await fetch(`${API_URL}/api/archives/${decision.archive_id}`, {
-            credentials: 'include'
-          });
+          const res = await fetch(
+            `${API_URL}/api/archives/${decision.archive_id}`,
+            { credentials: 'include' }
+          );
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const a = await res.json();
           if (a?.is_pdf && (a.file_url || a.download_url)) {
@@ -241,7 +266,7 @@ const DecisionDetailPage = () => {
   const handleAddKeyword = () => {
     const k = newKeyword.trim();
     if (!k) return;
-    setDecision(prev => {
+    setDecision((prev) => {
       const current = Array.isArray(prev?.keywords) ? prev.keywords : [];
       if (current.includes(k)) return prev;
       return { ...prev, keywords: [...current, k] };
@@ -250,9 +275,9 @@ const DecisionDetailPage = () => {
   };
 
   const handleRemoveKeyword = (kw) => {
-    setDecision(prev => {
+    setDecision((prev) => {
       const current = Array.isArray(prev?.keywords) ? prev.keywords : [];
-      return { ...prev, keywords: current.filter(k => k !== kw) };
+      return { ...prev, keywords: current.filter((k) => k !== kw) };
     });
   };
 
@@ -261,13 +286,13 @@ const DecisionDetailPage = () => {
       const payload = Array.from(
         new Set(
           (Array.isArray(decision?.keywords) ? decision.keywords : [])
-            .map(k => String(k).trim())
+            .map((k) => String(k).trim())
             .filter(Boolean)
         )
       );
       const updated = await updateDecisionKeywords(id, payload);
       const clean = normalizeKeywords(updated.keywords);
-      setDecision(prev => ({ ...prev, ...updated, keywords: clean }));
+      setDecision((prev) => ({ ...prev, ...updated, keywords: clean }));
       setMessageType('success');
       setMessage('✅ Mots-clés mis à jour');
       setTimeout(() => setMessage(null), 2500);
@@ -278,12 +303,41 @@ const DecisionDetailPage = () => {
     }
   };
 
+  const handleDeleteArchive = async () => {
+    if (!decision?.archive_id) return;
+    const ok = confirm(
+      'Supprimer définitivement cette archive ?\n\n' +
+        'Le PDF et ses métadonnées seront effacés. ' +
+        'La décision miroir (source: archive) sera également supprimée.'
+    );
+    if (!ok) return;
+
+    try {
+      await deleteArchiveById(decision.archive_id);
+      alert('Archive supprimée.');
+      navigate('/archives');
+    } catch (e) {
+      console.error(e);
+      alert("Échec de suppression de l'archive : " + e.message);
+    }
+  };
+
   const parts = useMemo(() => {
     if (!decision?.content) return [];
     return linearizeZones(decision.content, decision.zones);
   }, [decision]);
 
-  const hasZones = Boolean(decision?.zones) && parts.length > 0 && parts[0].zone !== 'full';
+  const hasZones =
+    Boolean(decision?.zones) && parts.length > 0 && parts[0].zone !== 'full';
+
+  // Typography classes for reading
+  const readingBase =
+    'max-w-3xl mx-auto text-gray-900 selection:bg-blue-100 selection:text-blue-900';
+  const readingSerif = 'font-serif';
+  const readingSans = 'font-sans';
+  const readingSize = readingMode ? 'text-[1.05rem]' : 'text-[0.975rem]';
+  const readingLeading = readingMode ? 'leading-8' : 'leading-7';
+  const readingTracking = 'tracking-normal';
 
   if (loading) return <div className="p-8 italic">⏳ Chargement en cours...</div>;
   if (error) return <div className="p-8 text-red-600 font-semibold">{error}</div>;
@@ -291,7 +345,7 @@ const DecisionDetailPage = () => {
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap gap-2 items-center">
+      <div className="mt-8 md:mt-10 mb-6 flex flex-wrap gap-2 items-center">
         <button
           onClick={() => navigate(-1)}
           className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
@@ -299,19 +353,19 @@ const DecisionDetailPage = () => {
           ← Retour
         </button>
 
-        {/* Hide "Rafraîchir depuis Judilibre" for archives */}
         {!isArchive && (
           <button
             onClick={handleForceRefresh}
             disabled={refreshing}
-            className={`px-4 py-2 rounded ${refreshing ? 'bg-gray-300' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
+            className={`px-4 py-2 rounded ${
+              refreshing ? 'bg-gray-300' : 'bg-blue-600 hover:bg-blue-700'
+            } text-white`}
             title="Récupérer à nouveau depuis Judilibre (texte intégral + zones)"
           >
             {refreshing ? 'Rafraîchissement…' : 'Rafraîchir depuis Judilibre'}
           </button>
         )}
 
-        {/* Hide zone toggle for archives */}
         {!isArchive && hasZones && (
           <label className="ml-auto flex items-center gap-2 text-sm">
             <input
@@ -322,31 +376,76 @@ const DecisionDetailPage = () => {
             Affichage sectionné (zones)
           </label>
         )}
+
+        {/* Reading toolbar */}
+        <div className="ml-auto flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={readingMode}
+              onChange={(e) => setReadingMode(e.target.checked)}
+            />
+            Mode lecture
+          </label>
+
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-600">Taille</span>
+            <button
+              type="button"
+              onClick={() => setFontScale((v) => Math.max(0.9, +(v - 0.05).toFixed(2)))}
+              className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+              aria-label="Decrease font size"
+            >
+              A–
+            </button>
+            <button
+              type="button"
+              onClick={() => setFontScale((v) => Math.min(1.2, +(v + 0.05).toFixed(2)))}
+              className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+              aria-label="Increase font size"
+            >
+              A+
+            </button>
+          </div>
+        </div>
+
+        {isArchive && decision.archive_id && (
+          <button
+            onClick={handleDeleteArchive}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            title="Supprimer définitivement l'archive"
+          >
+            Supprimer l’archive
+          </button>
+        )}
       </div>
 
-      <h1 className="text-2xl font-bold mb-2">
-        {decision.title || 'Sans titre'}
-      </h1>
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-1">
+          {decision.title || 'Sans titre'}
+        </h1>
 
-      <h2 className="text-xl italic mb-4">
-        {readableJurisdiction(decision.jurisdiction)} —{' '}
-        <span className="text-gray-500">{formatDate(decision.date)}</span>
-      </h2>
+        <h2 className="text-xl italic mb-4">
+          {readableJurisdiction(decision.jurisdiction)} —{' '}
+          <span className="text-gray-500">{formatDate(decision.date)}</span>
+        </h2>
 
-      <p className="italic mb-2">
-        Type d’affaire : {readableCaseType(decision.case_type)}
-      </p>
-
-      {decision.solution && (
-        <p className="italic mb-2">Solution : {decision.solution}</p>
-      )}
-      {decision.formation && (
-        <p className="italic mb-4">Formation : {decision.formation}</p>
-      )}
+        <div className="text-gray-700 mb-6">
+          <p className="italic">
+            Type d’affaire : {readableCaseType(decision.case_type)}
+          </p>
+          {decision.solution && (
+            <p className="italic">Solution : {decision.solution}</p>
+          )}
+          {decision.formation && (
+            <p className="italic">Formation : {decision.formation}</p>
+          )}
+        </div>
+      </div>
 
       {/* === PDF preview & download — archives only === */}
       {pdfInfo.isPdf && (
-        <div className="border rounded p-4 mb-6 bg-white">
+        <div className="max-w-4xl mx-auto border rounded-2xl p-5 mb-8 bg-white shadow-sm">
           <h3 className="font-bold mb-3">Fichier PDF (archive) :</h3>
           <div className="flex gap-3 mb-4">
             {pdfInfo?.downloadUrl && (
@@ -358,12 +457,11 @@ const DecisionDetailPage = () => {
               </a>
             )}
           </div>
-          {pdfInfo.fileUrl && (
+          {pdfInfo.fileUrl ? (
             <div className="w-full h-[75vh] border rounded-xl shadow-sm overflow-hidden">
               <iframe title="Aperçu PDF" src={pdfInfo.fileUrl} className="w-full h-full" />
             </div>
-          )}
-          {!pdfInfo.fileUrl && (
+          ) : (
             <p className="text-sm text-gray-500">
               Aucun aperçu disponible. Utilisez le bouton “Télécharger”.
             </p>
@@ -372,30 +470,41 @@ const DecisionDetailPage = () => {
       )}
       {/* === /PDF === */}
 
-      {/* Hide whole textual content block for archives */}
+      {/* === Textual content (hidden for archives) === */}
       {!isArchive && (
-        <div className="border rounded p-4 mb-6 bg-white">
-          <h3 className="font-bold mb-3">Contenu de la décision :</h3>
+        <article
+          className={[
+            'bg-white shadow-sm border rounded-2xl px-6 md:px-8 py-6 md:py-7 mb-8',
+            readingBase,
+            readingMode ? readingSerif : readingSans,
+            readingSize,
+            readingLeading,
+            readingTracking
+          ].join(' ')}
+          style={{ fontSize: `calc(${fontScale} * 1rem)` }}
+          aria-label="Contenu de la décision"
+        >
+          <h3 className="font-semibold text-gray-900 mb-4 text-lg">Contenu de la décision :</h3>
 
-          {/* Sectioned view if zones are provided; fallback to full text */}
           {hasZones && sectionedView ? (
             <div>
               {parts.map((p, i) => (
-                <section key={`${p.zone}-${i}`} className="mb-6">
-                  <h4 className="font-semibold mb-2">{labelForZone(p.zone)}</h4>
-                  <pre className="whitespace-pre-wrap leading-relaxed">{p.fragment}</pre>
+                <section key={`${p.zone}-${i}`} className="mb-8">
+                  <h4 className="font-semibold text-gray-800 mb-2">
+                    {labelForZone(p.zone)}
+                  </h4>
+                  {renderParagraphs(p.fragment)}
                 </section>
               ))}
             </div>
           ) : (
-            <pre className="whitespace-pre-wrap leading-relaxed">
-              {decision.content || 'Aucun contenu disponible.'}
-            </pre>
+            <div>{renderParagraphs(decision.content || 'Aucun contenu disponible.')}</div>
           )}
-        </div>
+        </article>
       )}
+      {/* === /Textual content === */}
 
-      <div className="border rounded p-4 mb-6 bg-white">
+      <div className="max-w-4xl mx-auto border rounded-2xl p-5 mb-8 bg-white shadow-sm">
         <h3 className="font-bold mb-2">Mots-clés :</h3>
         <div className="flex flex-wrap gap-2 mt-1">
           {Array.isArray(decision.keywords) && decision.keywords.length > 0 ? (
@@ -455,7 +564,7 @@ const DecisionDetailPage = () => {
         )}
       </div>
 
-      <div className="border rounded p-4 mb-6 bg-white">
+      <div className="max-w-4xl mx-auto border rounded-2xl p-5 mb-12 bg-white shadow-sm">
         <h3 className="font-bold mb-3">Mes notes :</h3>
 
         {/* Create */}
@@ -512,9 +621,9 @@ const DecisionDetailPage = () => {
                   </>
                 ) : (
                   <>
-                    <pre className="whitespace-pre-wrap leading-relaxed mb-2">
+                    <div className="whitespace-pre-wrap leading-7 mb-2">
                       {note.content}
-                    </pre>
+                    </div>
                     <div className="flex gap-2 text-sm">
                       <button
                         onClick={() => startEditNote(note)}
