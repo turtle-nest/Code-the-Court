@@ -5,11 +5,16 @@ import Sidebar from './Sidebar';
 
 const Layout = ({ children, title }) => {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Header title={title} />
-      <div className="flex flex-1">
+
+      {/* Espace réservé à la hauteur du header fixe */}
+      <div className="h-24 md:h-28" />
+
+      {/* Bande grise sur toute la hauteur de la page */}
+      <div className="flex min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-7rem)]">
         <Sidebar />
-        <main className="flex-1 p-6 bg-gray-50 overflow-y-auto">
+        <main className="flex-1 px-6 md:px-8 pb-12">
           {children}
         </main>
       </div>

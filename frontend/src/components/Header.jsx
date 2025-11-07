@@ -1,4 +1,3 @@
-// src/components/Header.jsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -26,7 +25,7 @@ function Header({ title }) {
   return (
     <header
       role="banner"
-      className="relative z-30 w-full h-24 md:h-28 text-white shadow-md shadow-blue-100"
+      className="fixed top-0 left-0 z-50 w-full h-24 md:h-28 text-white shadow-md shadow-blue-100"
       style={bgStyle}
       aria-label="Bandeau du site"
     >
@@ -36,7 +35,6 @@ function Header({ title }) {
         <div className="h-full w-full px-6 md:px-8">
           <div className="h-full grid grid-cols-[1fr_auto_1fr] items-center">
             <div aria-hidden="true" />
-
             <div className="flex items-center justify-center min-w-0">
               {title ? (
                 <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-center truncate">
@@ -44,7 +42,6 @@ function Header({ title }) {
                 </h1>
               ) : null}
             </div>
-
             <div className="flex items-center justify-end gap-3 md:gap-4 text-sm">
               {!token ? (
                 <Link

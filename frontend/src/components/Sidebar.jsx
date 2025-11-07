@@ -25,16 +25,10 @@ const Sidebar = () => {
   const role = localStorage.getItem('role');
 
   return (
-    <div className="w-64 shrink-0">
-      <aside
-        role="navigation"
-        aria-label="Navigation latérale"
-        className="
-          sticky top-24 md:top-28
-          bg-gray-200 border-r border-gray-300
-          px-4 py-6 flex flex-col gap-3
-        "
-      >
+    // Colonne grise uniforme (hauteur = celle du plus grand élément du flex parent)
+    <aside className="w-64 bg-gray-200 border-r border-gray-300">
+      {/* Contenu du menu collé sous le header */}
+      <nav className="sticky top-24 md:top-28 px-4 py-6 flex flex-col gap-3">
         {pathname === '/login' && (
           <>
             <Item to="/register" label="Créer un compte" active={pathname === '/register'} />
@@ -78,8 +72,8 @@ const Sidebar = () => {
             )}
           </>
         )}
-      </aside>
-    </div>
+      </nav>
+    </aside>
   );
 };
 

@@ -1,5 +1,4 @@
 // backend/controllers/decisionsController.js
-
 const db = require('../config/db');
 const {
   fetchDecisionsFromJudilibre,
@@ -12,8 +11,6 @@ const fs = require('fs');
 
 /**
  * Ensure we have the full decision text.
- * If the decision comes from Judilibre and content is missing/short,
- * fetch the full text from Judilibre and persist it.
  */
 async function ensureFullText(decisionRow) {
   try {
@@ -37,12 +34,10 @@ async function ensureFullText(decisionRow) {
         decisionRow.content = fullText;
       }
 
-      // attach zones to API response (not stored in DB)
       if (full?.zones) {
         decisionRow.zones = full.zones;
       }
 
-      // complete optional fields if missing
       decisionRow.solution = decisionRow.solution || full.solution || '';
       decisionRow.formation = decisionRow.formation || full.formation || '';
     }
@@ -72,7 +67,7 @@ const updateDecisionKeywords = async (req, res, next) => {
     await db.query('DELETE FROM decision_tags WHERE decision_id = $1::uuid', [id]);
 
     for (const kw of keywords) {
-      const label = kw.trim();
+      const label = String(kw || '').trim();
       if (!label) continue;
 
       const { rows } = await db.query('SELECT id FROM tags WHERE label = $1', [label]);
@@ -98,7 +93,10 @@ const updateDecisionKeywords = async (req, res, next) => {
       `
       SELECT 
         d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.public,
-        COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
+        COALESCE(
+          json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL),
+          '[]'::json
+        ) AS keywords
       FROM decisions d
       LEFT JOIN decision_tags dt ON dt.decision_id = d.id
       LEFT JOIN tags t ON t.id = dt.tag_id
@@ -122,30 +120,22 @@ const updateDecisionKeywords = async (req, res, next) => {
  */
 const getAllDecisions = async (req, res, next) => {
   try {
-    // --- Normalisation des paramètres (accepte fr/en + snake/camel) ---
     const q = req.query;
 
     const norm = {
       start_date: q.start_date || q.startDate || null,
       end_date: q.end_date || q.endDate || null,
-      // ex: "cour_de_cassation" (valeur canonique de ta liste)
       jurisdiction: q.jurisdiction || q.juridiction || null,
-      // ex: "civile", "penale", etc.
       case_type: q.case_type || q.type_affaire || q.typeAffaire || null,
-      // mot(s) clé(s) pour tags; supporte "a, b, c"
       keywords: q.keywords || q.keyword || null,
-      // peut être string | string[]
       source: q.source,
-      // tri/pagination
       page: Number(q.page || 1),
       limit: Number(q.limit || 10),
       sortBy: (q.sortBy || 'date').toLowerCase(),
       order: (q.order || 'desc').toLowerCase(),
-      // compat: si quelqu’un envoie encore "date" exact (égalité stricte)
       exact_date: q.date || null,
     };
 
-    // --- Validation légère ---
     if (!Number.isInteger(norm.page) || norm.page < 1) {
       return next(new ApiError('Invalid page number', 400));
     }
@@ -164,7 +154,6 @@ const getAllDecisions = async (req, res, next) => {
 
     const offset = (norm.page - 1) * norm.limit;
 
-    // --- Construction WHERE paramétrée ---
     let baseQuery = `
       FROM decisions d
       LEFT JOIN decision_tags dt ON dt.decision_id = d.id
@@ -188,7 +177,6 @@ const getAllDecisions = async (req, res, next) => {
       add(`d.date::date <= $${values.length}::date`);
     }
 
-    // Sélecteurs -> égalité stricte (valeurs viennent de listes contrôlées)
     if (norm.jurisdiction) {
       values.push(norm.jurisdiction);
       add(`d.jurisdiction = $${values.length}`);
@@ -198,7 +186,6 @@ const getAllDecisions = async (req, res, next) => {
       add(`d.case_type = $${values.length}`);
     }
 
-    // Filtre strict par tags (keywords) ; support multi-termes "a, b, c" => OR
     if (norm.keywords) {
       const terms = String(norm.keywords)
         .split(',')
@@ -224,7 +211,6 @@ const getAllDecisions = async (req, res, next) => {
       }
     }
 
-    // Source (array ou string)
     if (norm.source) {
       const sources = Array.isArray(norm.source)
         ? norm.source
@@ -238,17 +224,18 @@ const getAllDecisions = async (req, res, next) => {
       }
     }
 
-    // --- Count ---
     const countSql = `SELECT COUNT(DISTINCT d.id) AS totalCount ${baseQuery};`;
     const { rows: countRows } = await db.query(countSql, values);
     const totalCount = Number(countRows[0]?.totalcount || 0);
 
-    // --- Data (pagination + tri whitelistés) ---
     const dataSql = `
       SELECT
         d.id, d.external_id, d.ecli, d.title, d.content, d.date,
         d.jurisdiction, d.case_type, d.source, d.public,
-        COALESCE(json_agg(t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
+        COALESCE(
+          json_agg(t.label) FILTER (WHERE t.label IS NOT NULL),
+          '[]'::json
+        ) AS keywords
       ${baseQuery}
       GROUP BY d.id
       ORDER BY d.${norm.sortBy} ${norm.order.toUpperCase()}
@@ -323,10 +310,9 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
         type,
         solution,
         formation,
-        text  // may be missing on /search results
+        text
       } = decision;
 
-      // Best-effort enrichment at import time
       let contentToSave = (text || '').trim();
       if (!contentToSave && id) {
         try {
@@ -408,32 +394,6 @@ const getCaseTypes = async (req, res, next) => {
 };
 
 /**
- * GET /api/decisions/stats
- */
-const getDecisionsStats = async (req, res, next) => {
-  try {
-    const { rows: totalRows } = await db.query(`
-      SELECT 
-        COUNT(*) FILTER (WHERE source = 'judilibre')::int AS judilibre,
-        COUNT(*) FILTER (WHERE source = 'archive')::int AS archive,
-        COUNT(*)::int AS total
-      FROM decisions
-    `);
-
-    const stats = {
-      total: totalRows[0]?.total || 0,
-      archive: totalRows[0]?.archive || 0,
-      judilibre: totalRows[0]?.judilibre || 0
-    };
-
-    res.status(200).json(stats);
-  } catch (error) {
-    console.error('❌ Error fetching stats:', error);
-    next(new ApiError('Failed to fetch stats', 500));
-  }
-};
-
-/**
  * GET /api/decisions/:id
  */
 const getDecisionById = async (req, res, next) => {
@@ -444,11 +404,13 @@ const getDecisionById = async (req, res, next) => {
     let rows;
 
     if (uuidRegex.test(id)) {
-      // ID is a UUID → check id OR external_id (text)
       const result = await db.query(
         `
         SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.solution, d.formation, d.archive_id, a.file_path,
-          COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
+          COALESCE(
+            json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL),
+            '[]'::json
+          ) AS keywords
         FROM decisions d
         LEFT JOIN archives a ON a.id = d.archive_id
         LEFT JOIN decision_tags dt ON dt.decision_id = d.id
@@ -459,11 +421,13 @@ const getDecisionById = async (req, res, next) => {
       );
       rows = result.rows;
     } else {
-      // fallback: try by ECLI
       const result = await db.query(
         `
         SELECT d.id, d.external_id, d.ecli, d.title, d.content, d.date, d.jurisdiction, d.case_type, d.source, d.solution, d.formation,
-          COALESCE(json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL), '[]') AS keywords
+          COALESCE(
+            json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL),
+            '[]'::json
+          ) AS keywords
         FROM decisions d
         LEFT JOIN decision_tags dt ON dt.decision_id = d.id
         LEFT JOIN tags t ON t.id = dt.tag_id
@@ -478,13 +442,10 @@ const getDecisionById = async (req, res, next) => {
       return res.status(404).json({ message: `Decision not found for ${id}` });
     }
 
-    // Work on a single row
     let row = rows[0];
 
-    // diagnostics (optional)
     console.log('[DecisionDetail][before] contentLen:', (row.content || '').length, 'src:', row.source, 'extId:', row.external_id);
 
-    // Manual refresh support (?refresh=1)
     const forceRefresh = req.query.refresh === '1';
     if (forceRefresh && row.source === 'judilibre' && row.external_id) {
       try {
@@ -500,23 +461,18 @@ const getDecisionById = async (req, res, next) => {
       } catch (e) {
         console.warn('⚠️ forceRefresh failed:', e.message || e);
       }
-      // hint ensureFullText to skip shortness check
       row.forceRefresh = true;
     }
 
-    // Auto-enrich if content looks short
     row = await ensureFullText(row);
 
-    // diagnostics (optional)
     console.log('[DecisionDetail][after] contentLen:', (row.content || '').length, 'hasZones:', !!row.zones);
 
-    // === Enrichissement PDF (archives uniquement) ===
     const filePath = row.file_path || null;
     const isPdf = row.source === 'archive'
       && !!filePath
       && filePath.toLowerCase().endsWith('.pdf');
 
-    // Utilise BACKEND_URL si dispo, sinon recompose à partir de la requête
     const base =
       process.env.BACKEND_URL
       || `${req.protocol}://${req.get('host')}`;
@@ -534,9 +490,7 @@ const getDecisionById = async (req, res, next) => {
       row.download_url = null;
     }
 
-    // Optionnel: ne pas exposer file_path au client
     delete row.file_path;
-    // === /PDF ===
 
     res.status(200).json(row);
   } catch (err) {

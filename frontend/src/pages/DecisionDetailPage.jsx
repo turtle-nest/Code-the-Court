@@ -15,7 +15,6 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
-
 /**
  * Build an ordered list of text fragments from Judilibre "zones".
 */
@@ -73,7 +72,8 @@ const DecisionDetailPage = () => {
   const [error, setError] = useState(null);
   const [newKeyword, setNewKeyword] = useState('');
   const [message, setMessage] = useState(null);
-  const [sectionedView, setSectionedView] = useState(true); // default to sectioned if zones available
+  const [messageType, setMessageType] = useState('success'); // 'success' | 'error'
+  const [sectionedView, setSectionedView] = useState(true);
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(true);
   const [newNote, setNewNote] = useState('');
@@ -94,6 +94,20 @@ const DecisionDetailPage = () => {
     return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
+  // ---- helpers: normalize keywords safely everywhere ----
+  const normalizeKeywords = (kw) => {
+    if (Array.isArray(kw)) return kw.filter(Boolean).map(String);
+    if (typeof kw === 'string') {
+      try {
+        const parsed = JSON.parse(kw);
+        return Array.isArray(parsed) ? parsed.filter(Boolean).map(String) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
   const fetchDecision = async (opts = { refresh: false }) => {
     try {
       if (opts.refresh) setRefreshing(true);
@@ -107,7 +121,10 @@ const DecisionDetailPage = () => {
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error(`Erreur API: ${res.status}`);
       const data = await res.json();
-      setDecision(data);
+
+      // normalize keywords
+      const normalizedKeywords = normalizeKeywords(data.keywords);
+      setDecision({ ...data, keywords: normalizedKeywords });
     } catch (err) {
       console.error('[❌] Fetch decision error:', err);
       setError(`❌ Erreur lors du chargement de la décision (ID : ${id})`);
@@ -222,29 +239,40 @@ const DecisionDetailPage = () => {
   };
 
   const handleAddKeyword = () => {
-    if (newKeyword.trim()) {
-      setDecision(prev => ({
-        ...prev,
-        keywords: [...(prev.keywords || []), newKeyword.trim()]
-      }));
-      setNewKeyword('');
-    }
+    const k = newKeyword.trim();
+    if (!k) return;
+    setDecision(prev => {
+      const current = Array.isArray(prev?.keywords) ? prev.keywords : [];
+      if (current.includes(k)) return prev;
+      return { ...prev, keywords: [...current, k] };
+    });
+    setNewKeyword('');
   };
 
   const handleRemoveKeyword = (kw) => {
-    setDecision(prev => ({
-      ...prev,
-      keywords: (prev.keywords || []).filter(k => k !== kw)
-    }));
+    setDecision(prev => {
+      const current = Array.isArray(prev?.keywords) ? prev.keywords : [];
+      return { ...prev, keywords: current.filter(k => k !== kw) };
+    });
   };
 
   const handleSaveKeywords = async () => {
     try {
-      const updated = await updateDecisionKeywords(id, decision.keywords || []);
-      setDecision(updated);
+      const payload = Array.from(
+        new Set(
+          (Array.isArray(decision?.keywords) ? decision.keywords : [])
+            .map(k => String(k).trim())
+            .filter(Boolean)
+        )
+      );
+      const updated = await updateDecisionKeywords(id, payload);
+      const clean = normalizeKeywords(updated.keywords);
+      setDecision(prev => ({ ...prev, ...updated, keywords: clean }));
+      setMessageType('success');
       setMessage('✅ Mots-clés mis à jour');
       setTimeout(() => setMessage(null), 2500);
-    } catch {
+    } catch (e) {
+      setMessageType('error');
       setMessage('❌ Erreur lors de la mise à jour');
       setTimeout(() => setMessage(null), 3000);
     }
@@ -304,19 +332,6 @@ const DecisionDetailPage = () => {
         {readableJurisdiction(decision.jurisdiction)} —{' '}
         <span className="text-gray-500">{formatDate(decision.date)}</span>
       </h2>
-
-      {/* DEBUG (temporaire) */}
-      <pre className="text-xs bg-gray-50 p-2 rounded border overflow-auto">
-        {JSON.stringify({
-          id: decision.id,
-          source: decision.source,
-          archive_id: decision.archive_id,
-          is_pdf_from_decision: decision.is_pdf,
-          file_url_from_decision: decision.file_url,
-          download_url_from_decision: decision.download_url,
-          pdfInfo
-        }, null, 2)}
-      </pre>
 
       <p className="italic mb-2">
         Type d’affaire : {readableCaseType(decision.case_type)}
@@ -383,7 +398,7 @@ const DecisionDetailPage = () => {
       <div className="border rounded p-4 mb-6 bg-white">
         <h3 className="font-bold mb-2">Mots-clés :</h3>
         <div className="flex flex-wrap gap-2 mt-1">
-          {decision.keywords?.length > 0 ? (
+          {Array.isArray(decision.keywords) && decision.keywords.length > 0 ? (
             decision.keywords.map((kw, i) => (
               <span
                 key={`${kw}-${i}`}
@@ -430,7 +445,13 @@ const DecisionDetailPage = () => {
         </button>
 
         {message && (
-          <p className="mt-2 font-semibold text-sm text-green-600">{message}</p>
+          <p
+            className={`mt-2 font-semibold text-sm ${
+              messageType === 'success' ? 'text-green-600' : 'text-red-600'
+            }`}
+          >
+            {message}
+          </p>
         )}
       </div>
 
