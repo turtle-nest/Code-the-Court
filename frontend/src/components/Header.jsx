@@ -1,16 +1,48 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+// Small helper to join only truthy parts with " – "
+function joinParts(parts) {
+  return parts.filter(Boolean).join(' – ');
+}
+
 function Header({ title }) {
   const navigate = useNavigate();
 
+  // Auth tokens
   const token = localStorage.getItem('token');
-  const userEmail = localStorage.getItem('userEmail');
-  const userRole = localStorage.getItem('role');
+
+  // Try to read a structured user object first, then fall back to individual keys
+  let userObj = null;
+  try {
+    const raw = localStorage.getItem('user'); // e.g. {"fullName":"Nicolas","institution":"Holberton","role":"Admin","email":"..."}
+    if (raw) userObj = JSON.parse(raw);
+  } catch (_) {
+    /* ignore bad JSON */
+  }
+
+  const fullName    = userObj?.fullName    || localStorage.getItem('fullName')    || '';
+  const institution = userObj?.institution || localStorage.getItem('institution') || '';
+  const role        = (userObj?.role || localStorage.getItem('role') || '').trim();
+  const email       = userObj?.email || localStorage.getItem('userEmail') || '';
+
+  // Prefer fullName; if absent, show email local-part as a fallback
+  const displayName = fullName || (email ? email.split('@')[0] : '');
+
+  // Compose: "Nom – Institution – Rôle"
+  const identityLine = joinParts([
+    displayName,
+    institution,
+    role ? role.charAt(0).toUpperCase() + role.slice(1) : ''
+  ]);
 
   const handleLogout = () => {
+    // Clear everything we might have set during auth
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('fullName');
+    localStorage.removeItem('institution');
     localStorage.removeItem('role');
     navigate('/');
   };
@@ -42,6 +74,7 @@ function Header({ title }) {
                 </h1>
               ) : null}
             </div>
+
             <div className="flex items-center justify-end gap-3 md:gap-4 text-sm">
               {!token ? (
                 <Link
@@ -52,9 +85,16 @@ function Header({ title }) {
                 </Link>
               ) : (
                 <>
-                  <span className="hidden md:inline truncate max-w-[240px]">
-                    {userEmail} ({userRole})
-                  </span>
+                  {/* Identity line at the left of logout button */}
+                  {identityLine ? (
+                    <span
+                      className="hidden md:inline font-medium truncate max-w-[300px] text-white/90"
+                      title={identityLine}
+                    >
+                      {identityLine}
+                    </span>
+                  ) : null}
+
                   <button
                     onClick={handleLogout}
                     className="bg-white text-blue-800 px-3 py-2 rounded hover:bg-gray-100 transition"
