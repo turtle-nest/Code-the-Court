@@ -6,13 +6,11 @@ const Item = ({ to, label, active }) => (
     to={to}
     aria-current={active ? 'page' : undefined}
     className={[
-      // height x2.5: bigger vertical padding + slightly larger text
       'block w-full rounded-xl px-4 py-8 text-base font-medium transition',
-      'bg-[#1552a1] text-white',
-      'ring-1 ring-[#1e4ed8]/20 shadow-sm',
-      'hover:bg-[#1d4ed8] hover:ring-[#1d4ed8]/40',
-      'focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-2 focus:ring-offset-gray-200',
-      active ? 'bg-[#1d4ed8]' : ''
+      active
+        ? 'bg-[#e9eef9] text-[#1d3f73] ring-1 ring-[#c2cbe0]'
+        : 'bg-white text-gray-800 ring-1 ring-gray-200 hover:bg-[#f4f6fb] hover:ring-[#d2dae6]',
+      'shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-2 focus:ring-offset-gray-200'
     ].join(' ')}
   >
     {label}
@@ -27,7 +25,7 @@ const Sidebar = () => {
   return (
     <aside
       className={[
-        'w-64 shrink-0 rounded-2xl border border-blue-100 bg-[#f2f6fa] p-4',
+        'w-64 shrink-0 rounded-2xl border border-gray-200 bg-[#f3f4f6] p-4',
         'sticky top-24 md:top-28',
         'h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)]',
         'overflow-y-auto'
@@ -66,7 +64,7 @@ const Sidebar = () => {
                 {role === 'admin' && pathname !== '/archives' && (
                   <Item
                     to="/archives"
-                    label="Décisions Judilibre"
+                    label="Importer des décisions"
                     active={pathname === '/archives'}
                   />
                 )}
