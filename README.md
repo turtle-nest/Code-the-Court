@@ -39,7 +39,7 @@ It provides an intuitive interface to import, organize, and annotate court decis
 
 ```bash
 # 1️⃣ Clone the repository
-git clone https://github.com/<your-username>/SocioJustice.git
+git clone https://github.com/turtle-nest/Code-the-Court
 cd SocioJustice
 
 # 2️⃣ Setup backend
