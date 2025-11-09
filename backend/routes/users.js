@@ -1,22 +1,28 @@
 // backend/routes/users.js
-const { Router } = require('express');
-const { registerUser } = require('../controllers/usersController');
-const { login, refreshToken } = require('../controllers/authController');
+// Routes: user authentication & account endpoints
 
+const { Router } = require('express');
 const router = Router();
+
+const { login, refreshToken, registerUser } = require('../controllers/authController');
+const isDev = process.env.NODE_ENV === 'development';
 
 /* --------------------------- AUTHENTICATION --------------------------- */
 
-// ➜ Inscription utilisateur (demande de compte)
+// ➜ User registration request
 router.post('/register', registerUser);
 
-// ➜ Connexion utilisateur
+// ➜ User login
 router.post('/login', login);
 
-// ➜ Rafraîchissement du token JWT
+// ➜ JWT refresh token
 router.post('/refresh', refreshToken);
 
 /* ------------------------------- TEST -------------------------------- */
-router.get('/', (req, res) => res.json({ ok: true }));
+// Simple health check or dev test endpoint
+router.get('/', (req, res) => {
+  if (isDev) console.debug('[users] health check OK');
+  return res.status(200).json({ ok: true });
+});
 
 module.exports = router;

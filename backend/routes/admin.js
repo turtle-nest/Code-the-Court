@@ -1,3 +1,6 @@
+// backend/routes/admin.js
+// Routes: admin operations (approval workflow)
+
 const express = require('express');
 const router = express.Router();
 
@@ -6,6 +9,14 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const adminOnly = require('../middlewares/adminOnly');
 const { validateApproveUser } = require('../middlewares/validateInput');
 
-router.post('/approve', authMiddleware, adminOnly, validateApproveUser, approveUser);
+// Approve a user (admin only)
+// Validate body -> then auth -> then role check -> controller
+router.post(
+  '/approve',
+  validateApproveUser,
+  authMiddleware,
+  adminOnly,
+  approveUser
+);
 
 module.exports = router;
