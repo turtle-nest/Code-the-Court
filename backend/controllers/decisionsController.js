@@ -1,4 +1,6 @@
 // backend/controllers/decisionsController.js
+// Controller: decisions listing, import, detail, keywords, and stats (all code & comments in English)
+
 const db = require('../config/db');
 const {
   fetchDecisionsFromJudilibre,
@@ -9,8 +11,10 @@ const { signArchiveLink } = require('../utils/signedLinks');
 const path = require('path');
 const fs = require('fs');
 
+const isDev = process.env.NODE_ENV === 'development';
+
 /**
- * Ensure we have the full decision text.
+ * Ensure we have the full decision text (for Judilibre-sourced decisions).
  */
 async function ensureFullText(decisionRow) {
   try {
@@ -34,15 +38,13 @@ async function ensureFullText(decisionRow) {
         decisionRow.content = fullText;
       }
 
-      if (full?.zones) {
-        decisionRow.zones = full.zones;
-      }
+      if (full?.zones) decisionRow.zones = full.zones;
 
       decisionRow.solution = decisionRow.solution || full.solution || '';
       decisionRow.formation = decisionRow.formation || full.formation || '';
     }
   } catch (e) {
-    console.error('⚠️ ensureFullText fallback failed:', e.message || e);
+    if (isDev) console.error('[decisions] ensureFullText fallback failed:', e.message || e);
   }
   return decisionRow;
 }
@@ -58,7 +60,6 @@ const updateDecisionKeywords = async (req, res, next) => {
   }
 
   const { keywords } = req.body;
-
   if (!Array.isArray(keywords)) {
     return next(new ApiError('Invalid keywords format', 400));
   }
@@ -108,10 +109,10 @@ const updateDecisionKeywords = async (req, res, next) => {
 
     if (updated.length === 0) return next(new ApiError('Decision not found', 404));
 
-    res.status(200).json(updated[0]);
+    return res.status(200).json(updated[0]);
   } catch (error) {
-    console.error('❌ Error updating keywords:', error);
-    next(new ApiError('Failed to update keywords', 500));
+    if (isDev) console.error('[decisions] updateDecisionKeywords error:', error);
+    return next(new ApiError('Failed to update keywords', 500));
   }
 };
 
@@ -182,7 +183,7 @@ const getAllDecisions = async (req, res, next) => {
       add(`d.jurisdiction = $${values.length}`);
     }
     if (norm.case_type) {
-      values.push(norm.case_type);
+      values.push(norm.case-type);
       add(`d.case_type = $${values.length}`);
     }
 
@@ -233,7 +234,7 @@ const getAllDecisions = async (req, res, next) => {
         d.id, d.external_id, d.ecli, d.title, d.content, d.date,
         d.jurisdiction, d.case_type, d.source, d.public,
         COALESCE(
-          json_agg(t.label) FILTER (WHERE t.label IS NOT NULL),
+          json_agg(t.label ORDER BY t.label) FILTER (WHERE t.label IS NOT NULL),
           '[]'::json
         ) AS keywords
       ${baseQuery}
@@ -245,10 +246,10 @@ const getAllDecisions = async (req, res, next) => {
 
     const { rows } = await db.query(dataSql, dataVals);
 
-    res.status(200).json({ results: rows, totalCount });
+    return res.status(200).json({ results: rows, totalCount });
   } catch (error) {
-    console.error('❌ Error fetching decisions:', error);
-    next(new ApiError('Internal server error', 500));
+    if (isDev) console.error('[decisions] getAllDecisions error:', error);
+    return next(new ApiError('Internal server error', 500));
   }
 };
 
@@ -274,7 +275,7 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
       jurisdiction,
       caseType,
       query
-    } = req.body;
+    } = req.body || {};
 
     if (!dateDecisionMin || !dateDecisionMax) {
       return next(new ApiError('dateDecisionMin and dateDecisionMax are required', 400));
@@ -319,7 +320,7 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
           const full = await fetchDecisionById(id);
           contentToSave = (full && (full.text || full.summary || '')).trim();
         } catch (e) {
-          console.warn(`⚠️ Unable to fetch full text for ${id}:`, e.message || e);
+          if (isDev) console.warn(`[decisions] Unable to fetch full text for ${id}:`, e.message || e);
         }
       }
 
@@ -348,7 +349,7 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
       if (rowCount > 0) inserted++;
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       imported: inserted,
       fetched: results.length,
       timestamp: new Date().toISOString(),
@@ -356,8 +357,8 @@ const importDecisionsFromJudilibre = async (req, res, next) => {
     });
 
   } catch (error) {
-    console.error('❌ Error importing decisions from Judilibre:', error);
-    next(new ApiError('Failed to import from Judilibre', 500));
+    if (isDev) console.error('[decisions] importDecisionsFromJudilibre error:', error);
+    return next(new ApiError('Failed to import from Judilibre', 500));
   }
 };
 
@@ -370,10 +371,10 @@ const getJurisdictions = async (req, res, next) => {
       'SELECT DISTINCT jurisdiction FROM decisions ORDER BY jurisdiction;'
     );
     const jurisdictions = result.rows.map((row) => row.jurisdiction);
-    res.status(200).json(jurisdictions);
+    return res.status(200).json(jurisdictions);
   } catch (error) {
-    console.error('❌ Error fetching jurisdictions:', error);
-    next(new ApiError('Failed to fetch jurisdictions', 500));
+    if (isDev) console.error('[decisions] getJurisdictions error:', error);
+    return next(new ApiError('Failed to fetch jurisdictions', 500));
   }
 };
 
@@ -386,10 +387,10 @@ const getCaseTypes = async (req, res, next) => {
       'SELECT DISTINCT case_type FROM decisions ORDER BY case_type;'
     );
     const caseTypes = result.rows.map((row) => row.case_type);
-    res.status(200).json(caseTypes);
+    return res.status(200).json(caseTypes);
   } catch (error) {
-    console.error('❌ Error fetching case types:', error);
-    next(new ApiError('Failed to fetch case types', 500));
+    if (isDev) console.error('[decisions] getCaseTypes error:', error);
+    return next(new ApiError('Failed to fetch case types', 500));
   }
 };
 
@@ -439,19 +440,17 @@ const getDecisionById = async (req, res, next) => {
     }
 
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ message: `Decision not found for ${id}` });
+      return next(new ApiError(`Decision not found for ${id}`, 404));
     }
 
     let row = rows[0];
 
-    console.log(
-      '[DecisionDetail][before] contentLen:',
-      (row.content || '').length,
-      'src:',
-      row.source,
-      'extId:',
-      row.external_id
-    );
+    if (isDev) {
+      console.debug(
+        '[DecisionDetail][before]',
+        { contentLen: (row.content || '').length, src: row.source, extId: row.external_id }
+      );
+    }
 
     const forceRefresh = req.query.refresh === '1';
     if (forceRefresh && row.source === 'judilibre' && row.external_id) {
@@ -469,19 +468,19 @@ const getDecisionById = async (req, res, next) => {
         row.solution = row.solution || full.solution || '';
         row.formation = row.formation || full.formation || '';
       } catch (e) {
-        console.warn('⚠️ forceRefresh failed:', e.message || e);
+        if (isDev) console.warn('[decisions] forceRefresh failed:', e.message || e);
       }
       row.forceRefresh = true;
     }
 
     row = await ensureFullText(row);
 
-    console.log(
-      '[DecisionDetail][after] contentLen:',
-      (row.content || '').length,
-      'hasZones:',
-      !!row.zones
-    );
+    if (isDev) {
+      console.debug(
+        '[DecisionDetail][after]',
+        { contentLen: (row.content || '').length, hasZones: !!row.zones }
+      );
+    }
 
     const filePath = row.file_path || null;
     const isPdf =
@@ -508,16 +507,15 @@ const getDecisionById = async (req, res, next) => {
 
     delete row.file_path;
 
-    res.status(200).json(row);
+    return res.status(200).json(row);
   } catch (err) {
-    console.error('❌ Error fetching decision by id:', err);
-    next(new ApiError('Failed to fetch decision', 500));
+    if (isDev) console.error('[decisions] getDecisionById error:', err);
+    return next(new ApiError('Failed to fetch decision', 500));
   }
 };
 
 /**
  * GET /api/decisions/stats
- * (simple stats so the router can mount safely)
  */
 const getDecisionsStats = async (req, res, next) => {
   try {
@@ -531,14 +529,14 @@ const getDecisionsStats = async (req, res, next) => {
       "SELECT EXTRACT(YEAR FROM date)::int AS year, COUNT(*)::int AS count FROM decisions WHERE date IS NOT NULL GROUP BY year ORDER BY year DESC;"
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       total: totalRows[0]?.total || 0,
       byJurisdiction,
       byYear
     });
   } catch (error) {
-    console.error('❌ Error fetching decisions stats:', error);
-    next(new ApiError('Failed to fetch decisions stats', 500));
+    if (isDev) console.error('[decisions] getDecisionsStats error:', error);
+    return next(new ApiError('Failed to fetch decisions stats', 500));
   }
 };
 

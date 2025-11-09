@@ -1,5 +1,6 @@
 // backend/controllers/archivesController.js
-// All code & comments in English (project rule).
+// Controller: handle Archives CRUD and PDF streaming (all code & comments in English)
+
 const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
@@ -7,6 +8,7 @@ const db = require('../config/db');
 const ApiError = require('../utils/apiError');
 
 const uploadsRoot = path.resolve(process.cwd(), 'uploads');
+const isDev = process.env.NODE_ENV === 'development';
 
 /**
  * Build stable URLs for inline preview and forced download.
@@ -15,8 +17,8 @@ function buildArchiveUrls(archiveId) {
   const base = `/api/archives/${archiveId}/file`;
   return {
     is_pdf: true,
-    file_url: base,                      // for <iframe> inline preview
-    download_url: `${base}?download=1`,  // for the "Download" button
+    file_url: base,                     // for <iframe> inline preview
+    download_url: `${base}?download=1`, // for the "Download" button
   };
 }
 
@@ -27,6 +29,7 @@ function buildArchiveUrls(archiveId) {
  */
 const createArchive = async (req, res, next) => {
   const client = await db.connect();
+
   try {
     const { title, content, date, jurisdiction, case_type, location } = req.body;
     const file = req.file;
@@ -84,14 +87,14 @@ const createArchive = async (req, res, next) => {
 
     // 3) Enrich decision with PDF URLs for immediate front usage
     const urls = buildArchiveUrls(archive.id);
-    res.status(201).json({
+    return res.status(201).json({
       ...decision,
       ...urls, // -> { is_pdf, file_url, download_url }
     });
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('❌ Error creating archive/decision:', err);
-    next(new ApiError('Failed to create archive/decision', 500));
+    if (isDev) console.error('[archives] createArchive error:', err);
+    return next(new ApiError('Failed to create archive/decision', 500));
   } finally {
     client.release();
   }
@@ -99,7 +102,7 @@ const createArchive = async (req, res, next) => {
 
 /**
  * GET /api/archives
- * Simple listing if needed.
+ * Simple listing.
  */
 const getAllArchives = async (req, res, next) => {
   try {
@@ -108,10 +111,10 @@ const getAllArchives = async (req, res, next) => {
       FROM archives
       ORDER BY created_at DESC
     `);
-    res.json(result.rows);
+    return res.status(200).json(result.rows);
   } catch (err) {
-    console.error('❌ Error fetching archives:', err);
-    next(new ApiError('Failed to fetch archives', 500));
+    if (isDev) console.error('[archives] getAllArchives error:', err);
+    return next(new ApiError('Failed to fetch archives', 500));
   }
 };
 
@@ -145,10 +148,10 @@ const getArchiveMeta = async (req, res, next) => {
       ? buildArchiveUrls(a.id)
       : { is_pdf: false, file_url: null, download_url: null };
 
-    res.json({ ...a, source: 'archive', ...urls });
-  } catch (e) {
-    console.error('❌ Error fetching archive meta:', e);
-    next(new ApiError('Failed to fetch archive', 500));
+    return res.status(200).json({ ...a, source: 'archive', ...urls });
+  } catch (err) {
+    if (isDev) console.error('[archives] getArchiveMeta error:', err);
+    return next(new ApiError('Failed to fetch archive', 500));
   }
 };
 
@@ -178,7 +181,7 @@ const getArchiveFile = async (req, res, next) => {
     const safeRel = rel.replace(/^[/\\]+/, '');
     const abs = path.resolve(uploadsRoot, safeRel);
 
-    // prevent path traversal outside uploadsRoot
+    // Prevent path traversal outside uploadsRoot
     if (!((abs + path.sep).startsWith(uploadsRoot + path.sep) || abs === uploadsRoot)) {
       return next(new ApiError('Invalid file path', 400));
     }
@@ -198,12 +201,13 @@ const getArchiveFile = async (req, res, next) => {
 
     const stream = fs.createReadStream(abs);
     stream.on('error', (e) => {
-      console.error('Stream error:', e);
-      return next(new ApiError('Error while reading file', 500));
+      if (isDev) console.error('[archives] stream error:', e);
+      // Best effort: terminate response if streaming fails
+      try { res.destroy(e); } catch (_) {}
     });
-    stream.pipe(res);
+    return stream.pipe(res);
   } catch (err) {
-    console.error('❌ getArchiveFile failed:', err);
+    if (isDev) console.error('[archives] getArchiveFile error:', err);
     return next(new ApiError('Failed to send file', 500));
   }
 };
@@ -249,14 +253,14 @@ const deleteArchive = async (req, res, next) => {
           await fsp.unlink(abs);
         }
       } catch (e) {
-        console.warn('[archives] unlink failed:', e.message);
+        if (isDev) console.warn('[archives] unlink failed:', e.message);
       }
     }
 
     return res.status(204).send();
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('❌ Error deleting archive:', err);
+    if (isDev) console.error('[archives] deleteArchive error:', err);
     return next(new ApiError('Failed to delete archive', 500));
   } finally {
     client.release();
@@ -268,5 +272,5 @@ module.exports = {
   getAllArchives,
   getArchiveMeta,
   getArchiveFile,
-  deleteArchive, // ⬅️ export
+  deleteArchive,
 };
