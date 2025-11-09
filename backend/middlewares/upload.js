@@ -1,42 +1,47 @@
+// backend/middlewares/upload.js
+// Middleware: handle PDF uploads with Multer
+
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// ✅ Chemin absolu pour éviter les erreurs
-const uploadDir = path.join(__dirname, '../uploads/');
+const isDev = process.env.NODE_ENV === 'development';
 
-// ✅ Crée le dossier uploads/ s'il n'existe pas
+// Ensure uploads directory exists
+const uploadDir = path.resolve(__dirname, '../uploads/');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
-  console.log('📂 uploads/ folder created.');
+  if (isDev) console.log('📂 Created uploads/ folder');
 }
 
+// Configure storage engine
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`;
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const safeName = file.originalname.replace(/\s+/g, '_');
+    const uniqueName = `${Date.now()}-${safeName}`;
     cb(null, uniqueName);
-  }
+  },
 });
 
+// Restrict to PDF files only
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /pdf/;
-  const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mime = allowedTypes.test(file.mimetype);
+  const allowed = /pdf/;
+  const extOk = allowed.test(path.extname(file.originalname).toLowerCase());
+  const mimeOk = allowed.test(file.mimetype);
 
-  if (ext && mime) {
+  if (extOk && mimeOk) {
     cb(null, true);
   } else {
-    cb(new Error('Only PDF files are allowed'));
+    cb(new Error('Only PDF files are allowed'), false);
   }
 };
 
+// Initialize Multer
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
-  fileFilter: fileFilter
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+  fileFilter,
 });
 
 module.exports = upload;
