@@ -8,10 +8,8 @@ const Layout = ({ children, title }) => {
     <div className="min-h-screen bg-gray-50">
       <Header title={title} />
 
-      {/* Espace réservé à la hauteur du header fixe */}
       <div className="h-24 md:h-28" />
 
-      {/* Bande grise sur toute la hauteur de la page */}
       <div className="flex min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-7rem)]">
         <Sidebar />
         <main className="flex-1 px-6 md:px-8 pb-12">

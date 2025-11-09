@@ -132,7 +132,6 @@ const SearchPage = () => {
   const currentPage = parseInt(searchParams.get('page') || 1, 10);
 
   return (
-    // IMPORTANT : pas de `flex h-screen` ici, pour ne pas casser le sticky de la Sidebar du layout
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-6">
         <main role="main" className="p-2">

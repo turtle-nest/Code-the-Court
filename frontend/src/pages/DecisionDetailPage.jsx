@@ -101,8 +101,8 @@ const DecisionDetailPage = () => {
   const [editingContent, setEditingContent] = useState('');
 
   // Reading comfort
-  const [readingMode, setReadingMode] = useState(true); // NEW: “Mode lecture”
-  const [fontScale, setFontScale] = useState(1); // NEW: adjustable font size (×0.9–1.2)
+  const [readingMode, setReadingMode] = useState(true); // “Mode lecture”
+  const [fontScale, setFontScale] = useState(1); // adjustable font size (×0.9–1.2)
 
   // PDF (archives only)
   const [pdfInfo, setPdfInfo] = useState({
@@ -221,7 +221,7 @@ const DecisionDetailPage = () => {
     }
   };
 
-  // Charge les URLs PDF si la décision est une archive
+  // Loads PDF URLs if the decision is an archive
   useEffect(() => {
     async function loadPdf() {
       setPdfInfo({ isPdf: false, fileUrl: null, downloadUrl: null });

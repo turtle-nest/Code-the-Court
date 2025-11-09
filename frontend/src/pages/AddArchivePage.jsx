@@ -9,7 +9,7 @@ const AddArchivePage = () => {
         <div className="mt-6 max-w-2xl">
           <AddArchiveForm />
 
-          {/* --- Légende avec retours à la ligne --- */}
+          {/* --- Legend with line breaks --- */}
           <div className="mt-10 bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm text-sm text-gray-700">
             <div className="flex items-center mb-3">
               <svg
@@ -49,7 +49,7 @@ const AddArchivePage = () => {
               </div>
             </div>
           </div>
-          {/* --- Fin de la légende --- */}
+          {/* --- End of the legend --- */}
 
         </div>
       </div>

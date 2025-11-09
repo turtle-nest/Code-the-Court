@@ -28,7 +28,7 @@ const LoginForm = () => {
         body: JSON.stringify({ email, password })
       });
 
-      // ✅ Sauvegarde access + refresh tokens
+      // Backup access + refresh tokens
       localStorage.setItem('token', token);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('userEmail', userEmail);

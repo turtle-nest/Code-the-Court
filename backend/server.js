@@ -21,19 +21,13 @@ const app = express();
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 app.disable('x-powered-by');
 
+// ✅ CORS global configuration (no app.options('*'))
 app.use(cors({
   origin: FRONTEND_URL,
   credentials: true,
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-
-// Handle preflight quickly
-app.options('*', cors({
-  origin: FRONTEND_URL,
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  optionsSuccessStatus: 204,
 }));
 
 app.use(express.json({ limit: '2mb' }));
@@ -77,6 +71,7 @@ function safeMount(routePath, routerPath) {
 }
 
 safeMount('/api/notes', './routes/notes');
+safeMount('/api/metadata', './routes/metadata');
 safeMount('/api/archives', './routes/archives');
 safeMount('/api/decisions', './routes/decisions');
 safeMount('/api/users', './routes/users');

@@ -9,7 +9,7 @@ import {
   readableJurisdiction,
   readableCaseType,
   formatDecisionTitle
-} from '../config/judilibreConfig'; // ✅ utilise ton module unique
+} from '../config/judilibreConfig';
 
 function DecisionsPage() {
   const [formData, setFormData] = useState({
@@ -28,7 +28,7 @@ function DecisionsPage() {
   const [decisions, setDecisions] = useState([]);
 
   useEffect(() => {
-    // ✅ Charge la config Judilibre avant d’afficher les filtres
+    // Load the Judilibre configuration before displaying the filters
     async function initConfig() {
       await fetchJudilibreConfig();
       setJurisdictions(getJurisdictions());
@@ -36,7 +36,7 @@ function DecisionsPage() {
     }
     initConfig();
 
-    // ✅ Charger déjà les décisions existantes
+    // Load existing decisions
     fetch('http://localhost:3000/api/decisions?source=judilibre&limit=20')
       .then(res => res.json())
       .then(data => {
@@ -70,7 +70,7 @@ function DecisionsPage() {
       const count = result.count ?? result.total ?? (result.results?.length || 0);
       setMessage(`${count} décisions importées le ${new Date().toLocaleString()}`);
 
-      // ✅ Recharge la liste
+      // Reload the list
       const res = await fetch('http://localhost:3000/api/decisions?source=judilibre&limit=20');
       const data = await res.json();
       console.log('🎯 Refreshed decisions:', data.results);

@@ -13,7 +13,7 @@ import Layout from './components/Layout';
 function App() {
   return (
     <Routes>
-      {/* Page de connexion */}
+      {/* Login page */}
       <Route
         path="/login"
         element={
@@ -32,7 +32,7 @@ function App() {
         }
       />
 
-      {/* Accueil */}
+      {/* Home */}
       <Route
         path="/"
         element={
@@ -42,7 +42,7 @@ function App() {
         }
       />
 
-      {/* Ajout d'archive */}
+      {/* Adding archive */}
       <Route
         path="/add-archive"
         element={
@@ -66,7 +66,7 @@ function App() {
         }
       />
 
-      {/* Recherche */}
+      {/* Search */}
       <Route
         path="/search"
         element={
@@ -78,7 +78,7 @@ function App() {
         }
       />
 
-      {/* ✅ Route détail décision avec :id dynamique */}
+      {/* Route details decision with: dynamic ID */}
       <Route
         path="/decisions/:id"
         element={
@@ -90,7 +90,7 @@ function App() {
         }
       />
 
-      {/* ✅ Route fallback pour éviter les pages blanches */}
+      {/* Route fallback to avoid blank pages */}
       <Route
         path="*"
         element={

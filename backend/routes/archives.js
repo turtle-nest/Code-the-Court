@@ -15,48 +15,66 @@ const {
 } = require('../controllers/archivesController');
 const {
   validateCreateArchive,
-  validateUUIDParam,
 } = require('../middlewares/validateInput');
 
 const isDev = process.env.NODE_ENV === 'development';
+
+/* --------------------------- ID validator (local) -------------------------- */
+/**
+ * Accepts either a UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) or a plain integer.
+ * This avoids hard-coupling to DB type for archives.id.
+ */
+function validateIdParam(paramName = 'id') {
+  const reUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const reInt = /^\d+$/;
+  return (req, res, next) => {
+    const val = req.params[paramName];
+    if (!val || (!reUuid.test(val) && !reInt.test(val))) {
+      return res.status(400).json({ error: `Invalid ${paramName} format` });
+    }
+    next();
+  };
+}
+
+/* --------------------------------- Routes --------------------------------- */
 
 // List archives
 router.get('/', getAllArchives);
 
 // Archive metadata (+ file_url, download_url)
-router.get('/:id', validateUUIDParam('id'), getArchiveMeta);
+router.get('/:id', validateIdParam('id'), getArchiveMeta);
 
 // File streaming (inline or download with ?download=1)
-router.get('/:id/file', validateUUIDParam('id'), getArchiveFile);
+router.get('/:id/file', validateIdParam('id'), getArchiveFile);
 
 // Backward-compat: redirect /download -> /file?download=1
-router.get('/:id/download', validateUUIDParam('id'), (req, res) => {
+router.get('/:id/download', validateIdParam('id'), (req, res) => {
   res.redirect(302, `/api/archives/${req.params.id}/file?download=1`);
 });
 
 // Create archive (PDF upload) + mirror decision
 router.post(
   '/',
-  // Validate basic fields first
-  validateCreateArchive,
-  // Auth after we know payload is minimally valid
+  // 1) Auth first → rejette tôt sans parser un upload inutile
   authMiddleware,
-  // Accept both 'pdf' and 'file' field names from the frontend
+
+  // 2) Multer : accepte 'pdf' ou 'file' depuis le front
   upload.fields([
-    { name: 'pdf', maxCount: 1 },
+    { name: 'pdf',  maxCount: 1 },
     { name: 'file', maxCount: 1 },
   ]),
-  // Normalize to req.file so controllers can keep using req.file like single()
+
+  // 3) Normalisation : expose unifiés en req.file (compat avec controller)
   (req, res, next) => {
     const f =
-      (req.files?.pdf && req.files.pdf[0]) ||
-      (req.files?.file && req.files.file[0]) ||
+      (req.files && req.files.pdf  && req.files.pdf[0]) ||
+      (req.files && req.files.file && req.files.file[0]) ||
       null;
 
     if (!f) {
       return res
         .status(400)
-        .json({ error: "No file provided (expected 'pdf' or 'file')." });
+        .json({ error: "No file provided (expected field 'pdf' or 'file')." });
     }
 
     if (isDev) {
@@ -65,12 +83,17 @@ router.post(
     }
 
     req.file = f;
-    return next();
+    next();
   },
+
+  // 4) Validation des champs textuels (req.body est maintenant peuplé par Multer)
+  validateCreateArchive,
+
+  // 5) Contrôleur
   createArchive
 );
 
 // Delete archive
-router.delete('/:id', authMiddleware, validateUUIDParam('id'), deleteArchive);
+router.delete('/:id', authMiddleware, validateIdParam('id'), deleteArchive);
 
 module.exports = router;

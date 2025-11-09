@@ -2,7 +2,7 @@
 import React from 'react';
 
 export default function Pagination({ currentPage, totalPages, onPageChange }) {
-  if (totalPages <= 1) return null; // ✅ Pas de pagination si une seule page
+  if (totalPages <= 1) return null;
 
   return (
     <div className="flex justify-center items-center mt-8 gap-4">

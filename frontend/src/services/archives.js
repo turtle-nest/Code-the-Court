@@ -5,7 +5,6 @@ export async function getAllArchives() {
   return apiFetch('/api/archives');
 }
 
-// (Probablement non utilisé pour l’upload PDF — gardé tel quel pour compat)
 export async function createArchive(data) {
   return apiFetch('/api/archives', {
     method: 'POST',
@@ -14,7 +13,6 @@ export async function createArchive(data) {
   });
 }
 
-// ⬇️ NEW
 export async function deleteArchiveById(archiveId) {
   const res = await fetch(`/api/archives/${archiveId}`, {
     method: 'DELETE',
