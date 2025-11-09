@@ -1,54 +1,68 @@
-// services/manualArchiveService.js
+// backend/services/manualArchiveService.js
+// Service: insert manually scanned archives (PDFs + metadata) into the database
 
-const db = require('../config/db'); // adjust path if needed
+const db = require('../config/db');
+const ApiError = require('../utils/apiError');
+
+const isDev = process.env.NODE_ENV === 'development';
 
 /**
  * Insert a new scanned archive into the archives table.
  * @param {Object} archiveData - Archive data with file_path and metadata.
  * @param {string} archiveData.title - Title of the archive.
- * @param {string} archiveData.content - Content or summary.
- * @param {string} archiveData.date - Date of the document.
- * @param {string} archiveData.jurisdiction - Jurisdiction info.
- * @param {string} archiveData.location - Physical location or storage.
+ * @param {string} [archiveData.content] - Content or summary.
+ * @param {string} [archiveData.date] - Date of the document (ISO format).
+ * @param {string} [archiveData.jurisdiction] - Jurisdiction info.
+ * @param {string} [archiveData.location] - Physical location or storage.
  * @param {string} archiveData.file_path - Path to the uploaded PDF.
  * @param {string} archiveData.user_id - ID of the user uploading the archive.
- * @returns {Promise<Object>} Inserted archive row.
+ * @returns {Promise<Object>} The inserted archive record.
+ * @throws {ApiError} if insertion fails or required fields are missing.
  */
 async function createManualArchive(archiveData) {
-  const {
-    title,
-    content,
-    date,
-    jurisdiction,
-    location,
-    file_path,
-    user_id,
-  } = archiveData;
+  try {
+    const {
+      title,
+      content,
+      date,
+      jurisdiction,
+      location,
+      file_path,
+      user_id,
+    } = archiveData;
 
-  const insertQuery = `
-    INSERT INTO archives 
-      (title, content, date, jurisdiction, location, file_path, user_id)
-    VALUES 
-      ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING *;
-  `;
+    if (!title || !file_path || !user_id) {
+      throw new ApiError('Missing required fields (title, file_path, user_id)', 400);
+    }
 
-  const values = [
-    title,
-    content,
-    date,
-    jurisdiction,
-    location,
-    file_path,
-    user_id,
-  ];
+    const insertQuery = `
+      INSERT INTO archives 
+        (title, content, date, jurisdiction, location, file_path, user_id)
+      VALUES 
+        ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *;
+    `;
 
-  const { rows } = await db.query(insertQuery, values);
+    const values = [
+      title,
+      content || null,
+      date || null,
+      jurisdiction || null,
+      location || null,
+      file_path,
+      user_id,
+    ];
 
-  console.log('[✅] New manual archive inserted:', rows[0]);
-  return rows[0];
+    const { rows } = await db.query(insertQuery, values);
+    const archive = rows[0];
+
+    if (isDev) console.debug('[manualArchive] ✅ New archive inserted:', archive.id);
+
+    return archive;
+  } catch (err) {
+    if (isDev) console.error('[manualArchive] ❌ Insert failed:', err.message || err);
+    throw new ApiError('Failed to create manual archive', 500);
+  }
 }
 
-module.exports = {
-  createManualArchive,
-};
+module.exports = { createManualArchive };
