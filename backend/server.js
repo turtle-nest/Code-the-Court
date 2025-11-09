@@ -70,6 +70,7 @@ function safeMount(routePath, routerPath) {
   }
 }
 
+safeMount('/api/health', './routes/health');
 safeMount('/api/notes', './routes/notes');
 safeMount('/api/metadata', './routes/metadata');
 safeMount('/api/archives', './routes/archives');
